@@ -146,21 +146,58 @@
         .nota-btn.errou { border-color: #EF476F; background: #fce4ec; transform: scale(0.95); animation: shake 0.3s; }
         .nota-btn.destaque { border-color: #FF9800; background: #fff3e0; box-shadow: 0 0 15px rgba(255,152,0,0.3); }
         @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+        /* ===== FEEDBACK CENTRALIZADO ===== */
         .feedback {
-            text-align: center;
-            font-size: 0.95em;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 1.6em;
             font-weight: bold;
-            min-height: 30px;
-            padding: 5px;
-            border-radius: 12px;
-            margin: 5px 0;
-            transition: all 0.3s;
+            text-align: center;
+            max-width: 90%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 2px solid transparent;
         }
-        .feedback.sucesso { color: #4CAF50; background: #e8f5e9; }
-        .feedback.erro { color: #EF476F; background: #fce4ec; }
-        .feedback.info { color: #667eea; background: #e8eaf6; }
-        .feedback.fim { color: #FF9800; background: #fff3e0; font-size: 1.1em; }
-        .info { text-align: center; color: #666; font-size: 0.7em; margin-top: 4px; }
+        /* Mensagem de sucesso (parabéns) – fundo branco, texto verde */
+        .feedback.sucesso {
+            opacity: 1;
+            background: white;
+            color: #4CAF50;
+            border-color: #4CAF50;
+        }
+        /* Mensagem de erro – fundo escuro, texto vermelho */
+        .feedback.erro {
+            opacity: 1;
+            background: rgba(0,0,0,0.85);
+            color: #EF476F;
+            border-color: #EF476F;
+            backdrop-filter: blur(4px);
+        }
+        .feedback.info {
+            opacity: 1;
+            background: rgba(0,0,0,0.85);
+            color: #667eea;
+            border-color: #667eea;
+            backdrop-filter: blur(4px);
+        }
+        .feedback.fim {
+            opacity: 1;
+            background: rgba(0,0,0,0.85);
+            color: #FF9800;
+            border-color: #FF9800;
+            backdrop-filter: blur(4px);
+        }
+        .feedback:not(.sucesso):not(.erro):not(.info):not(.fim) {
+            opacity: 0;
+        }
 
         /* Overlay de orientação */
         .orientation-overlay {
@@ -188,13 +225,14 @@
         .orientation-overlay .sub { font-size: 0.6em; opacity: 0.8; margin-top: 15px; }
         @keyframes rotate-phone { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
         @media (orientation: landscape) { .orientation-overlay { display: none; } }
+
         @media (max-width: 600px) {
             .container { padding: 10px 8px; }
             h1 { font-size: 1.2em; }
             .info-top { font-size: 0.7em; padding: 3px 6px; }
             .nota-btn { padding: 4px 10px; font-size: 0.8em; }
             .btn { padding: 8px 12px; font-size: 0.8em; min-width: 50px; }
-            .feedback { font-size: 0.85em; padding: 4px; }
+            .feedback { font-size: 1.2em; padding: 15px 25px; }
             .partitura-container { min-height: 90px; padding: 3px 2px; }
             #notation { min-height: 80px; }
             .legenda { gap: 6px; }
@@ -204,6 +242,7 @@
             .btn { font-size: 0.7em; padding: 6px 8px; min-width: 40px; }
             .nota-btn { font-size: 0.65em; padding: 3px 6px; }
             .info-top { font-size: 0.6em; }
+            .feedback { font-size: 1em; padding: 12px 20px; }
         }
     </style>
 </head>
@@ -217,7 +256,6 @@
 
 <div class="container">
     <h1>🎵 <span>Audição</span></h1>
-    <!--<div class="subtitle">Ouça a escala e adivinhe a nota!</div>-->
 
     <div class="info-top">
         <span>🎼 <span class="conjunto-label" id="conjuntoLabel">Dó Maior - Dó Mi Sol</span></span>
@@ -236,6 +274,7 @@
         </div>
     </div>
 
+    <!-- Feedback centralizado -->
     <div class="feedback" id="feedbackMsg"></div>
 
     <div class="legenda" id="legenda"></div>
@@ -453,9 +492,7 @@
             renderer.resize(width, height);
             const ctx = renderer.getContext();
 
-            // Pauta centralizada verticalmente: Y = (height - altura_pauta)/2
-            // altura_pauta ≈ 4 * 10 = 40px, mais margem para as cabeças das notas
-            // Usamos Y=25 para deixar espaço para as cabeças das notas (que sobem até ~20px acima da pauta)
+            // Pauta com Y=0 (como você ajustou)
             const stave = new VF.Stave(50, 0, width - 100);
             stave.addClef('treble');
             stave.addTimeSignature('4/4');
@@ -479,7 +516,7 @@
                 if (svg) {
                     const notaWidth = (width - 140) / notasAtuais.length;
                     const x = 70 + (destaqueIndex * notaWidth) + notaWidth / 2;
-                    const y = 30; // alinhado com a pauta (ligeiramente acima do centro das notas)
+                    const y = 30; // alinhado com a pauta
 
                     const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
                     const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
@@ -633,9 +670,6 @@
         notaDestaque = -1;
         desenharPartitura(notaDestaque);
 
-        feedbackMsg.textContent = '🎧 Ouça a nota e clique na opção correta!';
-        feedbackMsg.className = 'feedback info';
-
         aguardandoResposta = true;
         desabilitarBotoes(false);
         btnPlay.disabled = true;
@@ -648,8 +682,6 @@
         tocarNota(notaEsperada, 0.6, 0.35);
         notaDestaque = -1;
         desenharPartitura(notaDestaque);
-        feedbackMsg.textContent = '🎧 Ouça novamente e clique na opção!';
-        feedbackMsg.className = 'feedback info';
     }
 
     function verificarResposta(letraClicada) {
@@ -740,8 +772,6 @@
         }
         desenharPartitura();
         atualizarInterface();
-        feedbackMsg.textContent = '🎧 Clique em "Tocar" para começar';
-        feedbackMsg.className = 'feedback info';
         console.log('✅ Carregado com ' + TOTAL_CONJUNTOS + ' conjuntos.');
     }
 
