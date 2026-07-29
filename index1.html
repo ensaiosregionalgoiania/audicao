@@ -312,7 +312,7 @@
     <div class="controls-row">
         <div class="control-group">
             <label>🔊 Volume</label>
-            <input type="range" id="volumeSlider" min="0" max="200" value="100">
+            <input type="range" id="volumeSlider" min="0" max="100" value="100">
             <span class="value" id="volumeValue">100%</span>
         </div>
         <div class="control-group">
@@ -533,15 +533,17 @@
     }
 
     // ============================================================
-    //  ÁUDIO – PIANO SIMPLES COM VOLUME MESTRE
+    //  ÁUDIO – PIANO SIMPLES COM VOLUME MESTRE (AJUSTADO PARA MÁXIMO)
     // ============================================================
-    function tocarNota(notaLetra, duracao = 0.6, volume = 0.35) {
+    function tocarNota(notaLetra, duracao = 0.6, volume = 1.0) {
         try {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 // Criar nó de ganho mestre
                 masterGainNode = audioCtx.createGain();
-                masterGainNode.gain.value = parseFloat(volumeSlider.value) / 100;
+                // Definir ganho inicial com base no slider (0 a 1)
+                const vol = parseInt(volumeSlider.value) / 100;
+                masterGainNode.gain.value = Math.min(vol, 1.0); // nunca ultrapassa 1.0 para evitar clipping
                 masterGainNode.connect(audioCtx.destination);
             }
             if (audioCtx.state === 'suspended') {
@@ -554,20 +556,22 @@
             const freq = nota.freq;
             const time = audioCtx.currentTime;
 
+            // Oscilador 1 (fundamental) – volume alto
             const osc1 = audioCtx.createOscillator();
             const gain1 = audioCtx.createGain();
-            osc1.type = 'sine';
+            osc1.type = 'square';
             osc1.frequency.setValueAtTime(freq, time);
             gain1.gain.setValueAtTime(0, time);
-            gain1.gain.linearRampToValueAtTime(volume * 0.7, time + 0.01);
+            gain1.gain.linearRampToValueAtTime(volume * 0.8, time + 0.01);
             gain1.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.6);
 
+            // Oscilador 2 (harmônico) – volume médio
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
-            osc2.type = 'triangle';
+            osc2.type = 'square';
             osc2.frequency.setValueAtTime(freq * 2, time);
             gain2.gain.setValueAtTime(0, time);
-            gain2.gain.linearRampToValueAtTime(volume * 0.12, time + 0.01);
+            gain2.gain.linearRampToValueAtTime(volume * 0.25, time + 0.01);
             gain2.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.5);
 
             osc1.connect(gain1);
@@ -780,10 +784,6 @@
         const pausaMeioBase = 0.4;
 
         // Aplicar fator de velocidade (invertido: quanto maior o slider, mais rápido)
-        // speedFactor = 1.0 (100%) -> normal
-        // speedFactor = 0.5 (50%) -> mais rápido (metade do tempo)
-        // speedFactor = 2.0 (200%) -> mais lento (dobro do tempo)
-        // Portanto, multiplicamos duração e intervalos pelo inverso do fator
         const duracaoNota = duracaoBase / speedFactor;
         const intervalo = intervaloBase / speedFactor;
         const pausaMeio = pausaMeioBase / speedFactor;
@@ -806,7 +806,8 @@
                     notaDestaque = -1;
                     desenharPartitura(notaDestaque);
                 } else {
-                    tocarNota(item.letra, item.duracao, 0.30);
+                    // Tocar com volume máximo (1.0) – o ganho mestre controla o volume final
+                    tocarNota(item.letra, item.duracao, 1.0);
                     const idxNota = CONJUNTOS[conjuntoIndex]?.notas.findIndex(n => n.letra === item.letra) ?? -1;
                     notaDestaque = (idxNota !== -1) ? idxNota : -1;
                     desenharPartitura(notaDestaque);
@@ -854,7 +855,7 @@
         const duracaoNota = duracaoBase / speedFactor;
 
         const id1 = setTimeout(() => {
-            tocarNota(notaEsperada, duracaoNota, 0.35);
+            tocarNota(notaEsperada, duracaoNota, 1.0);
         }, 300);
         timeoutsPergunta.push(id1);
 
@@ -862,8 +863,6 @@
             feedbackMsg.textContent = '';
             feedbackMsg.className = 'feedback';
             const id3 = setTimeout(() => {
-                feedbackMsg.textContent = '🎧 Ouça a nota e clique na opção correta!';
-                feedbackMsg.className = 'feedback info';
                 aguardandoResposta = true;
                 desabilitarBotoes(false);
                 btnPlay.disabled = false;
@@ -898,7 +897,7 @@
         const duracaoNota = duracaoBase / speedFactor;
 
         const id1 = setTimeout(() => {
-            tocarNota(notaEsperada, duracaoNota, 0.35);
+            tocarNota(notaEsperada, duracaoNota, 1.0);
         }, 300);
         timeoutsPergunta.push(id1);
 
@@ -1006,7 +1005,9 @@
         const val = parseInt(this.value);
         volumeValue.textContent = val + '%';
         if (masterGainNode) {
-            masterGainNode.gain.value = val / 100;
+            // Limitar o ganho a 1.0 para evitar clipping
+            const gain = Math.min(val / 100, 1.0);
+            masterGainNode.gain.value = gain;
         }
     });
 
