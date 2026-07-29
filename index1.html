@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎵 Escalas com repetição 4x (duração estendida)</title>
+    <title>🎵 Escalas com repetição 4x</title>
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.4/build/cjs/vexflow.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,6 +35,41 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px 20px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: #f0f2ff;
+            border-radius: 12px;
+        }
+        .controls-row .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: #333;
+        }
+        .controls-row .control-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .controls-row input[type="range"] {
+            width: 100px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+        .controls-row .value {
+            min-width: 36px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
         }
         .tonalidade-selector {
             display: flex;
@@ -169,7 +204,7 @@
         .nota-btn.destaque { border-color: #FF9800; background: #fff3e0; box-shadow: 0 0 15px rgba(255,152,0,0.3); }
         @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 
-        /* ===== FEEDBACK CENTRALIZADO (com suporte para ícone grande) ===== */
+        /* ===== FEEDBACK CENTRALIZADO ===== */
         .feedback {
             position: fixed;
             top: 50%;
@@ -195,7 +230,17 @@
         .feedback.erro { opacity: 1; background: rgba(0,0,0,0.85); color: #EF476F; border-color: #EF476F; backdrop-filter: blur(4px); }
         .feedback.info { opacity: 1; background: rgba(0,0,0,0.85); color: #667eea; border-color: #667eea; backdrop-filter: blur(4px); }
         .feedback.fim { opacity: 1; background: rgba(0,0,0,0.85); color: #FF9800; border-color: #FF9800; backdrop-filter: blur(4px); }
-        .feedback.icone { opacity: 1; background: rgba(0,0,0,0.7); border-color: #ffd700; color: #ffd700; font-size: 5em; padding: 40px; backdrop-filter: blur(6px); border-width: 4px; }
+        .feedback.icone { 
+            opacity: 1; 
+            background: rgba(0,0,0,0.7); 
+            border-color: #ffd700; 
+            color: #ffd700; 
+            font-size: 5em; 
+            padding: 40px; 
+            backdrop-filter: blur(6px); 
+            border-width: 4px;
+            transition: opacity 0.2s ease;
+        }
         .feedback:not(.sucesso):not(.erro):not(.info):not(.fim):not(.icone) { opacity: 0; }
 
         /* Overlay de orientação */
@@ -228,6 +273,9 @@
         @media (max-width: 600px) {
             .container { padding: 10px 8px; }
             h1 { font-size: 1.2em; }
+            .controls-row { flex-direction: column; align-items: stretch; gap: 8px; }
+            .controls-row .control-group { justify-content: space-between; }
+            .controls-row input[type="range"] { width: 100%; }
             .tonalidade-selector label { font-size: 0.8em; }
             .tonalidade-selector select { font-size: 0.8em; padding: 4px 10px; }
             .info-top { font-size: 0.7em; padding: 3px 6px; }
@@ -259,6 +307,20 @@
 
 <div class="container">
     <h1>🎵 <span>Audição</span></h1>
+
+    <!-- Controles de Volume e Velocidade -->
+    <div class="controls-row">
+        <div class="control-group">
+            <label>🔊 Volume</label>
+            <input type="range" id="volumeSlider" min="0" max="200" value="100">
+            <span class="value" id="volumeValue">100%</span>
+        </div>
+        <div class="control-group">
+            <label>⏱️ Velocidade</label>
+            <input type="range" id="speedSlider" min="30" max="200" value="100">
+            <span class="value" id="speedValue">1.0x</span>
+        </div>
+    </div>
 
     <div class="tonalidade-selector">
         <label for="tonalidadeSelect">🎼 Tonalidade:</label>
@@ -312,7 +374,7 @@
     ];
 
     // ============================================================
-    //  GERADOR DE CONJUNTOS (recebe a tonalidade como parâmetro)
+    //  GERADOR DE CONJUNTOS
     // ============================================================
     function gerarConjuntos(tonalidadeNome) {
         const ton = TONALIDADES.find(t => t.nome === tonalidadeNome);
@@ -356,7 +418,6 @@
         const nomeTon = ton.nome;
         const len = escala.length;
 
-        // Acordes (arpejos de 3 e 4 notas)
         const graus3 = [0, 2, 4];
         const graus4 = [0, 2, 4, 6];
         const tiposAcorde = [
@@ -381,7 +442,6 @@
             }
         });
 
-        // Escalas consecutivas de 3 a 8 notas
         tamanhos.forEach(tam => {
             for (let i = 0; i < len; i++) {
                 const notasLetras = [];
@@ -417,11 +477,16 @@
     const legendaEl = document.getElementById('legenda');
     const overlay = document.getElementById('orientationOverlay');
     const tonalidadeSelect = document.getElementById('tonalidadeSelect');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const speedSlider = document.getElementById('speedSlider');
+    const volumeValue = document.getElementById('volumeValue');
+    const speedValue = document.getElementById('speedValue');
 
     // ============================================================
     //  VARIÁVEIS DE ESTADO
     // ============================================================
     let audioCtx = null;
+    let masterGainNode = null;
     let estaTocando = false;
     let aguardandoResposta = false;
     let notaEsperada = null;
@@ -435,7 +500,7 @@
     let TOTAL_CONJUNTOS = 0;
     let jogoTerminado = false;
     let perguntaConcluida = false;
-    let timeoutsPergunta = []; // para controlar os timeouts da pergunta
+    let timeoutsPergunta = [];
 
     // ============================================================
     //  FUNÇÃO PARA CARREGAR TONALIDADE E REINICIAR O JOGO
@@ -468,12 +533,16 @@
     }
 
     // ============================================================
-    //  ÁUDIO – PIANO SIMPLES
+    //  ÁUDIO – PIANO SIMPLES COM VOLUME MESTRE
     // ============================================================
     function tocarNota(notaLetra, duracao = 0.6, volume = 0.35) {
         try {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // Criar nó de ganho mestre
+                masterGainNode = audioCtx.createGain();
+                masterGainNode.gain.value = parseFloat(volumeSlider.value) / 100;
+                masterGainNode.connect(audioCtx.destination);
             }
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
@@ -502,9 +571,9 @@
             gain2.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.5);
 
             osc1.connect(gain1);
-            gain1.connect(audioCtx.destination);
+            gain1.connect(masterGainNode);
             osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
+            gain2.connect(masterGainNode);
 
             osc1.start(time);
             osc1.stop(time + duracao);
@@ -519,7 +588,7 @@
     }
 
     // ============================================================
-    //  PARTITURA – CENTRALIZADA, SEM TÍTULO/NOMES
+    //  PARTITURA
     // ============================================================
     function desenharPartitura(destaqueIndex = -1) {
         notationEl.innerHTML = '';
@@ -611,7 +680,7 @@
     }
 
     // ============================================================
-    //  INTERFACE E LÓGICA DO JOGO (com repetição 4x)
+    //  INTERFACE E LÓGICA DO JOGO
     // ============================================================
     function atualizarInterface() {
         if (!CONJUNTOS.length) {
@@ -641,11 +710,10 @@
         });
 
         desabilitarBotoes(true);
-        btnPlay.disabled = (jogoTerminado || perguntaConcluida || !CONJUNTOS.length);
+        btnPlay.disabled = (jogoTerminado || !CONJUNTOS.length);
         btnRepeat.disabled = true;
         if (aguardandoResposta) {
             desabilitarBotoes(false);
-            btnPlay.disabled = true;
             btnRepeat.disabled = false;
         }
     }
@@ -654,9 +722,6 @@
         document.querySelectorAll('.nota-btn').forEach(b => b.disabled = desabilitar);
     }
 
-    // ============================================================
-    //  CONSTRUIR SEQUÊNCIA COM REPETIÇÃO 4x
-    // ============================================================
     function construirSequencia() {
         const notas = CONJUNTOS[conjuntoIndex]?.notas || [];
         const letras = notas.map(n => n.letra);
@@ -679,22 +744,51 @@
     }
 
     // ============================================================
-    //  TOCAR ESCALA COM REPETIÇÕES (DUPLICAÇÃO DA DURAÇÃO)
+    //  TOCAR ESCALA (com velocidade ajustável)
     // ============================================================
     function tocarEscala() {
-        if (estaTocando || jogoTerminado || perguntaConcluida || !CONJUNTOS.length) return;
+        if (estaTocando) return;
+        if (jogoTerminado || !CONJUNTOS.length) return;
+
+        if (timeoutsPergunta) {
+            timeoutsPergunta.forEach(id => clearTimeout(id));
+            timeoutsPergunta = [];
+        }
+        if (timeoutIds) {
+            timeoutIds.forEach(id => clearTimeout(id));
+            timeoutIds = [];
+        }
+
+        aguardandoResposta = false;
+        perguntaConcluida = false;
+        notaEsperada = null;
+        notaEsperadaObj = null;
+        feedbackMsg.textContent = '';
+        feedbackMsg.className = 'feedback';
+        document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+
         estaTocando = true;
         btnPlay.disabled = true;
         btnRepeat.disabled = true;
         desabilitarBotoes(true);
-        feedbackMsg.textContent = '';
-        feedbackMsg.className = 'feedback';
+
+        // Obter fator de velocidade
+        const speedFactor = parseFloat(speedSlider.value) / 100;
+        // Duração base e intervalo base (valores originais)
+        const duracaoBase = 0.4;
+        const intervaloBase = 0.15;
+        const pausaMeioBase = 0.4;
+
+        // Aplicar fator de velocidade (invertido: quanto maior o slider, mais rápido)
+        // speedFactor = 1.0 (100%) -> normal
+        // speedFactor = 0.5 (50%) -> mais rápido (metade do tempo)
+        // speedFactor = 2.0 (200%) -> mais lento (dobro do tempo)
+        // Portanto, multiplicamos duração e intervalos pelo inverso do fator
+        const duracaoNota = duracaoBase / speedFactor;
+        const intervalo = intervaloBase / speedFactor;
+        const pausaMeio = pausaMeioBase / speedFactor;
 
         const sequencia = construirSequencia();
-        const duracaoNota = 0.4;
-        const intervalo = 0.15;
-        const pausaMeio = 0.4;
-
         const seqEventos = [];
         const meio = Math.floor(sequencia.length / 2);
         sequencia.forEach((letra, idx) => {
@@ -703,9 +797,6 @@
                 seqEventos.push({ letra: null, duracao: pausaMeio });
             }
         });
-
-        timeoutIds.forEach(id => clearTimeout(id));
-        timeoutIds = [];
 
         let tempoCorrente = 0;
         seqEventos.forEach((item, index) => {
@@ -737,7 +828,7 @@
     }
 
     // ============================================================
-    //  PERGUNTA (COM ÍCONE 🔊 CENTRALIZADO)
+    //  PERGUNTA COM ÍCONE
     // ============================================================
     function iniciarPergunta() {
         if (jogoTerminado || perguntaConcluida || !CONJUNTOS.length) return;
@@ -747,77 +838,83 @@
         notaEsperada = notas[indice].letra;
         notaEsperadaObj = notas[indice];
 
-        // Limpa timeouts anteriores da pergunta
         if (timeoutsPergunta) {
             timeoutsPergunta.forEach(id => clearTimeout(id));
             timeoutsPergunta = [];
         }
 
-        // Remove qualquer destaque da partitura (figura oculta)
         notaDestaque = -1;
         desenharPartitura(notaDestaque);
 
-        // Mostra o ícone 🔊 centralizado (grande)
         feedbackMsg.textContent = '🔊';
         feedbackMsg.className = 'feedback icone';
 
-        // === Cronograma: mostrar ícone -> tocar som -> ocultar ícone ===
-        // 1. Aguarda 300ms para o usuário ver o ícone
+        const speedFactor = parseFloat(speedSlider.value) / 100;
+        const duracaoBase = 0.6;
+        const duracaoNota = duracaoBase / speedFactor;
+
         const id1 = setTimeout(() => {
-            // 2. Toca a nota
-            tocarNota(notaEsperada, 0.6, 0.35);
+            tocarNota(notaEsperada, duracaoNota, 0.35);
         }, 300);
         timeoutsPergunta.push(id1);
 
-        // 3. Aguarda 300ms (espera) + 600ms (duração da nota) + 150ms (margem) = 1050ms
         const id2 = setTimeout(() => {
-            // 4. Oculta o ícone e mostra a mensagem de instrução
-            feedbackMsg.textContent = '🎧 Ouça a nota e clique na opção correta!';
-            feedbackMsg.className = 'feedback info';
-            // Habilita os botões para resposta
-            aguardandoResposta = true;
-            desabilitarBotoes(false);
-            btnPlay.disabled = true;
-            btnRepeat.disabled = false;
-            document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('destaque'));
-        }, 300 + 600 + 150);
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = 'feedback';
+            const id3 = setTimeout(() => {
+                feedbackMsg.textContent = '🎧 Ouça a nota e clique na opção correta!';
+                feedbackMsg.className = 'feedback info';
+                aguardandoResposta = true;
+                desabilitarBotoes(false);
+                btnPlay.disabled = false;
+                btnRepeat.disabled = false;
+                document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('destaque'));
+                estaTocando = false;
+            }, 200);
+            timeoutsPergunta.push(id3);
+        }, 300 + (duracaoNota * 1000) + 200);
         timeoutsPergunta.push(id2);
     }
 
     // ============================================================
-    //  REPETIR NOTA (com ícone também, para consistência)
+    //  REPETIR NOTA
     // ============================================================
     function repetirNota() {
         if (!aguardandoResposta || !notaEsperada || jogoTerminado || perguntaConcluida) return;
         
-        // Limpa timeouts antigos
         if (timeoutsPergunta) {
             timeoutsPergunta.forEach(id => clearTimeout(id));
             timeoutsPergunta = [];
         }
 
-        // Remove destaque
         notaDestaque = -1;
         desenharPartitura(notaDestaque);
 
-        // Mostra o ícone novamente
         feedbackMsg.textContent = '🔊';
         feedbackMsg.className = 'feedback icone';
 
+        const speedFactor = parseFloat(speedSlider.value) / 100;
+        const duracaoBase = 0.6;
+        const duracaoNota = duracaoBase / speedFactor;
+
         const id1 = setTimeout(() => {
-            tocarNota(notaEsperada, 0.6, 0.35);
+            tocarNota(notaEsperada, duracaoNota, 0.35);
         }, 300);
         timeoutsPergunta.push(id1);
 
         const id2 = setTimeout(() => {
-            feedbackMsg.textContent = '🎧 Ouça novamente e clique na opção!';
-            feedbackMsg.className = 'feedback info';
-            // Reativa a resposta (caso tenha sido desativada)
-            aguardandoResposta = true;
-            desabilitarBotoes(false);
-            btnPlay.disabled = true;
-            btnRepeat.disabled = false;
-        }, 300 + 600 + 150);
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = 'feedback';
+            const id3 = setTimeout(() => {
+                feedbackMsg.textContent = '🎧 Ouça novamente e clique na opção!';
+                feedbackMsg.className = 'feedback info';
+                aguardandoResposta = true;
+                desabilitarBotoes(false);
+                btnPlay.disabled = false;
+                btnRepeat.disabled = false;
+            }, 200);
+            timeoutsPergunta.push(id3);
+        }, 300 + (duracaoNota * 1000) + 200);
         timeoutsPergunta.push(id2);
     }
 
@@ -830,7 +927,6 @@
         desabilitarBotoes(true);
         btnRepeat.disabled = true;
         
-        // Limpa timeouts pendentes da pergunta (para não sobrescrever o feedback)
         if (timeoutsPergunta) {
             timeoutsPergunta.forEach(id => clearTimeout(id));
             timeoutsPergunta = [];
@@ -853,26 +949,22 @@
             perguntaConcluida = true;
             feedbackMsg.textContent = `🎉 Parabéns! Você acertou: ${notaEsperadaObj.nome}!`;
             feedbackMsg.className = 'feedback sucesso';
-            setTimeout(() => avançarEtapa(), 1000);
+            setTimeout(() => avançarEtapa(), 1500);
         } else {
             erros++;
             feedbackMsg.textContent = `😢 Que pena! Você errou. A nota era ${notaEsperadaObj.nome}. Tente novamente!`;
             feedbackMsg.className = 'feedback erro';
-            // Não avança, apenas permite tentar de novo (o usuário pode clicar em "Repetir")
-            // Mas precisamos reativar a resposta para o próximo clique
             setTimeout(() => {
-                // Limpa o feedback de erro após 1.5s para não atrapalhar
-                // Mas mantém a resposta ativa
+                feedbackMsg.textContent = '';
+                feedbackMsg.className = 'feedback';
                 aguardandoResposta = true;
                 desabilitarBotoes(false);
                 btnRepeat.disabled = false;
-                // Limpa o texto de erro para não ficar poluído, mas podemos deixar
-                // Vamos deixar a mensagem de erro e reativar os botões
-                feedbackMsg.textContent = `😢 Errou! A nota era ${notaEsperadaObj.nome}. Tente novamente!`;
-                feedbackMsg.className = 'feedback erro';
-                // Reativa os botões para nova tentativa
+                btnPlay.disabled = false;
                 document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
-            }, 500);
+                feedbackMsg.textContent = '🎧 Ouça a nota e clique na opção correta!';
+                feedbackMsg.className = 'feedback info';
+            }, 1500);
         }
         atualizarInterface();
     }
@@ -908,11 +1000,36 @@
     }
 
     // ============================================================
+    //  ATUALIZAR CONTROLES
+    // ============================================================
+    volumeSlider.addEventListener('input', function() {
+        const val = parseInt(this.value);
+        volumeValue.textContent = val + '%';
+        if (masterGainNode) {
+            masterGainNode.gain.value = val / 100;
+        }
+    });
+
+    speedSlider.addEventListener('input', function() {
+        const val = parseFloat(this.value) / 100;
+        speedValue.textContent = val.toFixed(1) + 'x';
+    });
+
+    // ============================================================
     //  EVENTOS
     // ============================================================
     btnPlay.addEventListener('click', () => {
-        if (jogoTerminado || perguntaConcluida) return;
-        if (aguardandoResposta || estaTocando) return;
+        if (aguardandoResposta && !jogoTerminado && !perguntaConcluida) {
+            if (timeoutsPergunta) {
+                timeoutsPergunta.forEach(id => clearTimeout(id));
+                timeoutsPergunta = [];
+            }
+            aguardandoResposta = false;
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = 'feedback';
+            document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+        }
+        if (estaTocando || jogoTerminado || perguntaConcluida || !CONJUNTOS.length) return;
         tocarEscala();
     });
 
@@ -936,7 +1053,10 @@
         }
         const tonalidadePadrao = tonalidadeSelect.value;
         carregarTonalidade(tonalidadePadrao);
-        console.log('✅ Carregado com ícone 🔊 antes da pergunta.');
+        // Inicializar valores dos sliders
+        volumeValue.textContent = volumeSlider.value + '%';
+        speedValue.textContent = (parseFloat(speedSlider.value) / 100).toFixed(1) + 'x';
+        console.log('✅ Carregado com controles de volume e velocidade.');
     }
 
     if (document.readyState === 'complete') {
