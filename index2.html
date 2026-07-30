@@ -6,7 +6,6 @@
     <title>🎵 Escalas com repetição</title>
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.4/build/cjs/vexflow.js"></script>
     <style>
-        /* Mantido igual ao anterior, com ajuste para o select ficar em uma linha */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -40,7 +39,7 @@
         .controls-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px 20px;
+            gap: 12px 15px;
             justify-content: center;
             align-items: center;
             margin-bottom: 10px;
@@ -51,7 +50,7 @@
         .controls-row .control-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-size: 0.85em;
             font-weight: 500;
             color: #333;
@@ -61,6 +60,7 @@
             align-items: center;
             gap: 4px;
             cursor: pointer;
+            font-weight: inherit;
         }
         .controls-row input[type="checkbox"] {
             width: 18px;
@@ -68,41 +68,35 @@
             accent-color: #764ba2;
             cursor: pointer;
         }
-        .tonalidade-selector {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 15px;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 8px 12px;
-            background: #f0f2ff;
-            border-radius: 12px;
+        .controls-row input[type="range"] {
+            width: 80px; /* reduzido */
+            cursor: pointer;
         }
-        .tonalidade-selector select {
-            padding: 4px 8px;
+        .controls-row select {
             border-radius: 20px;
             border: 2px solid #667eea;
             background: white;
-            font-size: 0.9em;
+            font-size: 0.85em;
             font-weight: 500;
             color: #333;
             outline: none;
             cursor: pointer;
             transition: 0.2s;
-            min-width: 180px;
-            max-height: 36px;  /* Para mostrar apenas uma linha */
+            padding: 2px 8px;
+            min-width: 100px;
+            max-width: 140px;
+            height: 30px;
         }
-        .tonalidade-selector select:focus {
+        .controls-row select:focus {
             border-color: #764ba2;
             box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.3);
         }
-        .tonalidade-selector select option {
-            padding: 4px 8px;
+        .controls-row select option {
+            padding: 2px 6px;
         }
-        .tonalidade-selector label {
-            font-weight: bold;
-            font-size: 0.9em;
+        .controls-row .control-group label[for="tonalidadeSelect"],
+        .controls-row .control-group label[for="ordemSelect"] {
+            font-weight: normal;
             white-space: nowrap;
         }
         .info-top {
@@ -278,8 +272,8 @@
             h1 { font-size: 1.2em; }
             .controls-row { flex-direction: column; align-items: stretch; gap: 8px; }
             .controls-row .control-group { justify-content: space-between; }
-            .tonalidade-selector { flex-direction: column; align-items: stretch; }
-            .tonalidade-selector select { width: 100%; max-height: 40px; }
+            .controls-row input[type="range"] { width: 100%; }
+            .controls-row select { max-width: 100%; width: 100%; }
             .info-top { font-size: 0.7em; padding: 3px 6px; }
             .nota-btn { padding: 4px 10px; font-size: 0.8em; }
             .btn { padding: 8px 12px; font-size: 0.8em; min-width: 50px; }
@@ -310,27 +304,39 @@
 <div class="container">
     <h1>🎵 <span>Audição</span></h1>
 
-    <!-- Controles: Velocidade e Dividir -->
+    <!-- Controles em uma única linha -->
     <div class="controls-row">
+        <!-- Velocidade -->
         <div class="control-group">
             <label>⏱️ Velocidade</label>
             <input type="range" id="speedSlider" min="30" max="200" value="100">
             <span class="value" id="speedValue">1.0x</span>
         </div>
+
+        <!-- Dividir -->
         <div class="control-group">
             <label>
                 <input type="checkbox" id="dividirCheckbox">
-                🎵 Dividir notas (3x)
+                🎵 Dividir
             </label>
         </div>
-    </div>
 
-    <!-- Seleção múltipla de tonalidades com <select multiple> em uma linha -->
-    <div class="tonalidade-selector" id="tonalidadeSelector">
-        <label for="tonalidadeSelect">🎼 Tonalidades:</label>
-        <select id="tonalidadeSelect" multiple size="1">
-            <!-- Opções preenchidas dinamicamente -->
-        </select>
+        <!-- Ordem (select único) -->
+        <div class="control-group">
+            <label for="ordemSelect">📊 Ordem:</label>
+            <select id="ordemSelect">
+                <option value="sequencial">Sequencial</option>
+                <option value="mista">Mista</option>
+            </select>
+        </div>
+
+        <!-- Escalas (select múltiplo) -->
+        <div class="control-group">
+            <label for="tonalidadeSelect">🎼 Escalas:</label>
+            <select id="tonalidadeSelect" multiple size="1">
+                <!-- preenchido pelo JavaScript -->
+            </select>
+        </div>
     </div>
 
     <div class="info-top">
@@ -357,7 +363,7 @@
 
 <script>
     // ============================================================
-    //  LISTA FIXA DE EXERCÍCIOS (com solbfa -> sol;fa corrigido)
+    //  LISTA FIXA DE EXERCÍCIOS (mesma de antes)
     // ============================================================
     const LINHAS_CRUDAS = `do;do;mi;sol
     do;re;fa;la
@@ -908,7 +914,7 @@
     reb;sib;do';reb';mib';fa
     reb;do;reb;mib;fa;solb
     reb;reb;mib;fa;solb;lab;sib
-    reb;mib;fa;solbfa;lab;sib;do'
+    reb;mib;fa;solb;fa;lab;sib;do'
     reb;fa;solb;lab;sib;do';reb'
     reb;solb;lab;sib;do';reb';mib'
     reb;lab;sib';do';reb';mib';fa'
@@ -1052,6 +1058,7 @@
     const speedValue = document.getElementById('speedValue');
     const dividirCheckbox = document.getElementById('dividirCheckbox');
     const tonalidadeSelect = document.getElementById('tonalidadeSelect');
+    const ordemSelect = document.getElementById('ordemSelect');
 
     // ============================================================
     //  VARIÁVEIS DE ESTADO
@@ -1075,17 +1082,15 @@
     let timeoutsPergunta = [];
 
     // ============================================================
-    //  FUNÇÃO PARA REORDENAR INTERCALADO (usado quando "Todas" está ativo)
+    //  REORDENAÇÃO MISTA
     // ============================================================
     function reordenarIntercalado(conjuntos) {
-        // Agrupar por tonalidade na ordem especificada
         const ordemTonalidades = ['do', 'fa', 'sol', 'sib', 're', 'mib', 'la', 'lab', 'mi', 'reb'];
         const grupos = {};
         conjuntos.forEach(c => {
             if (!grupos[c.tonalidade]) grupos[c.tonalidade] = [];
             grupos[c.tonalidade].push(c);
         });
-        // Intercalar pegando o primeiro de cada, depois o segundo, etc.
         const resultado = [];
         let maxLen = 0;
         ordemTonalidades.forEach(ton => {
@@ -1102,38 +1107,28 @@
     }
 
     // ============================================================
-    //  FUNÇÃO PARA CARREGAR TONALIDADES SELECIONADAS
+    //  CARREGAR TONALIDADES SELECIONADAS
     // ============================================================
     function carregarTonalidadesSelecionadas() {
         const selectedOptions = tonalidadeSelect.selectedOptions;
-        const selecionadas = Array.from(selectedOptions).map(opt => opt.value);
-        // Verifica se "todas" está entre as selecionadas
-        const temTodas = selecionadas.includes('todas');
-        let tonalidadesFiltro;
-        if (temTodas) {
-            // Se "Todas" está selecionado, considera todas as tonalidades disponíveis
-            tonalidadesFiltro = [...new Set(CONJUNTOS_TODOS.map(c => c.tonalidade))];
-            // Marca todas as outras opções (opcional, para UI)
+        const selecionadas = Array.from(selectedOptions)
+            .map(opt => opt.value)
+            .filter(v => v !== 'todas');
+
+        let tonalidadesFiltro = selecionadas.length > 0 ? selecionadas : ['do'];
+        if (selecionadas.length === 0) {
             Array.from(tonalidadeSelect.options).forEach(opt => {
-                if (opt.value !== 'todas') opt.selected = true;
+                if (opt.value === 'do') opt.selected = true;
             });
-        } else {
-            tonalidadesFiltro = selecionadas;
-            // Se nenhuma tonalidade selecionada, usa 'do' como fallback
-            if (tonalidadesFiltro.length === 0) {
-                tonalidadesFiltro = ['do'];
-                // Marca 'do' no select
-                Array.from(tonalidadeSelect.options).forEach(opt => {
-                    if (opt.value === 'do') opt.selected = true;
-                });
-            }
         }
-        // Filtrar conjuntos
+
         let filtrados = CONJUNTOS_TODOS.filter(c => tonalidadesFiltro.includes(c.tonalidade));
-        // Se "Todas" estiver ativo, reordenar intercalado
-        if (temTodas) {
+
+        const ordem = ordemSelect.value;
+        if (ordem === 'mista') {
             filtrados = reordenarIntercalado(filtrados);
         }
+
         CONJUNTOS_FILTRADOS = filtrados;
         TOTAL_CONJUNTOS = CONJUNTOS_FILTRADOS.length;
         conjuntoIndex = 0;
@@ -1156,7 +1151,6 @@
         btnPlay.disabled = false;
         btnRepeat.disabled = true;
         document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
-        console.log(`🔄 Tonalidades selecionadas: ${tonalidadesFiltro.join(', ')} (${TOTAL_CONJUNTOS} exercícios)`);
     }
 
     // ============================================================
@@ -1215,7 +1209,7 @@
     }
 
     // ============================================================
-    //  PARTITURA – com armadura via nome em inglês
+    //  PARTITURA
     // ============================================================
     function desenharPartitura(destaqueIndex = -1) {
         notationEl.innerHTML = '';
@@ -1324,7 +1318,7 @@
     }
 
     // ============================================================
-    //  INTERFACE E LÓGICA (restante inalterado)
+    //  INTERFACE E LÓGICA (resumida)
     // ============================================================
     function atualizarInterface() {
         if (!CONJUNTOS_FILTRADOS.length) {
@@ -1431,10 +1425,7 @@
         const intervalo = intervaloBase / speedFactor;
 
         const sequencia = construirSequencia();
-        const seqEventos = [];
-        sequencia.forEach((letra, idx) => {
-            seqEventos.push({ letra: letra, duracao: duracaoNota });
-        });
+        const seqEventos = sequencia.map(letra => ({ letra, duracao: duracaoNota }));
 
         let tempoCorrente = 0;
         seqEventos.forEach((item, index) => {
@@ -1507,7 +1498,6 @@
 
     function repetirNota() {
         if (!aguardandoResposta || !notaEsperada || jogoTerminado || perguntaConcluida) return;
-        
         if (timeoutsPergunta) {
             timeoutsPergunta.forEach(id => clearTimeout(id));
             timeoutsPergunta = [];
@@ -1605,7 +1595,6 @@
         aguardandoResposta = false;
         desabilitarBotoes(true);
         btnRepeat.disabled = true;
-        
         if (timeoutsPergunta) {
             timeoutsPergunta.forEach(id => clearTimeout(id));
             timeoutsPergunta = [];
@@ -1670,6 +1659,30 @@
     }
 
     // ============================================================
+    //  ENVIO DE RESULTADO VIA WHATSAPP (ao fechar)
+    // ============================================================
+    window.addEventListener('beforeunload', function(e) {
+        if (acertos >= 10) {
+            const total = acertos + erros;
+            const tonalidadesSelecionadas = Array.from(tonalidadeSelect.selectedOptions)
+                .map(o => o.value)
+                .filter(v => v !== 'todas')
+                .join(', ') || 'Nenhuma';
+            const mensagem = `📊 *Resumo do treino de escalas*%0A` +
+                             `✅ Acertos: ${acertos}%0A` +
+                             `❌ Erros: ${erros}%0A` +
+                             `📌 Total: ${total}%0A` +
+                             `🎼 Tonalidades: ${tonalidadesSelecionadas}%0A` +
+                             `📊 Ordem: ${ordemSelect.value === 'mista' ? 'Mista' : 'Sequencial'}`;
+            const confirmar = confirm(`Você tem ${acertos} acertos. Deseja enviar o resultado pelo WhatsApp?`);
+            if (confirmar) {
+                const url = `https://wa.me/?text=${mensagem}`;
+                window.open(url, '_blank');
+            }
+        }
+    });
+
+    // ============================================================
     //  CONTROLES E INICIALIZAÇÃO
     // ============================================================
     speedSlider.addEventListener('input', function() {
@@ -1694,46 +1707,55 @@
 
     btnRepeat.addEventListener('click', repetirNota);
 
+    ordemSelect.addEventListener('change', function() {
+        if (CONJUNTOS_TODOS.length) {
+            carregarTonalidadesSelecionadas();
+        }
+    });
+
     function popularSelect() {
-        // Ordem definida pelo usuário
         const ordem = ['do', 'fa', 'sol', 'sib', 're', 'mib', 'la', 'lab', 'mi', 'reb'];
-        // Mapear nome para exibição
         const nomeExib = {
             'do': 'Dó', 'fa': 'Fá', 'sol': 'Sol', 'sib': 'Si♭', 're': 'Ré',
             'mib': 'Mi♭', 'la': 'Lá', 'lab': 'Lá♭', 'mi': 'Mi', 'reb': 'Ré♭'
         };
-        // Obter todas as tonalidades disponíveis
         const disponiveis = new Set(CONJUNTOS_TODOS.map(c => c.tonalidade));
-        // Filtrar apenas as que existem, mantendo a ordem
         const tons = ordem.filter(t => disponiveis.has(t));
+
         tonalidadeSelect.innerHTML = '';
-        // Adicionar opção "Todas" no início
         const optTodas = document.createElement('option');
         optTodas.value = 'todas';
         optTodas.textContent = 'Todas';
-        optTodas.selected = true; // padrão
+        optTodas.selected = true;
         tonalidadeSelect.appendChild(optTodas);
 
         tons.forEach(ton => {
             const option = document.createElement('option');
             option.value = ton;
             option.textContent = nomeExib[ton] || ton.charAt(0).toUpperCase() + ton.slice(1);
-            // Não selecionar por padrão, apenas "Todas" estará selecionado
+            option.selected = true;
             tonalidadeSelect.appendChild(option);
         });
-        tonalidadeSelect.addEventListener('change', carregarTonalidadesSelecionadas);
-        // Para garantir que "Todas" esteja selecionado e as outras também (para UI)
-        // Mas a lógica de carregarTonalidadesSelecionadas tratará "todas"
-        // Vamos forçar a seleção de todas as opções quando "todas" está marcado
-        tonalidadeSelect.addEventListener('change', function() {
-            const selected = Array.from(this.selectedOptions).map(o => o.value);
-            if (selected.includes('todas')) {
-                // Marca todas as outras opções
-                Array.from(this.options).forEach(opt => {
-                    if (opt.value !== 'todas') opt.selected = true;
-                });
+
+        tonalidadeSelect.addEventListener('change', function(e) {
+            const selectedValues = Array.from(this.selectedOptions).map(o => o.value);
+            const todasEstaSelecionada = selectedValues.includes('todas');
+
+            if (todasEstaSelecionada) {
+                const outras = Array.from(this.options).filter(o => o.value !== 'todas');
+                const todasMarcadas = outras.every(o => o.selected);
+                if (todasMarcadas) {
+                    outras.forEach(o => o.selected = false);
+                } else {
+                    outras.forEach(o => o.selected = true);
+                }
+                optTodas.selected = false;
             }
+
+            carregarTonalidadesSelecionadas();
         });
+
+        optTodas.selected = false; // "Todas" não fica como filtro
     }
 
     function init() {
@@ -1742,11 +1764,9 @@
             return;
         }
         CONJUNTOS_TODOS = processarLista();
-        console.log(`✅ ${CONJUNTOS_TODOS.length} exercícios carregados.`);
         popularSelect();
         carregarTonalidadesSelecionadas();
         speedValue.textContent = (parseFloat(speedSlider.value) / 100).toFixed(1) + 'x';
-        console.log('✅ Sistema pronto com select em linha, opção "Todas" e ordenação intercalada.');
     }
 
     if (document.readyState === 'complete') {
