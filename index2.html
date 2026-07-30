@@ -15,6 +15,7 @@
             justify-content: center;
             padding: 10px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: relative;
         }
         .container {
             background: white;
@@ -25,11 +26,31 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             position: relative;
         }
+        .btn-fechar {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: #EF476F;
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+            padding: 6px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(239, 71, 111, 0.3);
+        }
+        .btn-fechar:hover {
+            transform: scale(1.05);
+            background: #d63a5e;
+        }
         h1 {
             text-align: center;
             color: #333;
             font-size: 1.4em;
             margin-bottom: 4px;
+            margin-right: 60px; /* espaço para o botão fechar */
         }
         h1 span {
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -41,7 +62,7 @@
             flex-wrap: wrap;
             gap: 12px 15px;
             justify-content: center;
-            align-items: flex-start; /* alinhamento ao topo para os grupos verticais */
+            align-items: flex-start;
             margin-bottom: 10px;
             padding: 8px 12px;
             background: #f0f2ff;
@@ -55,7 +76,6 @@
             font-weight: 500;
             color: #333;
         }
-        /* Grupos verticais: label em cima, controle abaixo */
         .control-group.vertical {
             flex-direction: column;
             align-items: flex-start;
@@ -69,7 +89,7 @@
             font-weight: inherit;
         }
         .control-group.vertical label {
-            font-weight: 500; /* mantém destaque */
+            font-weight: 500;
         }
         .control-group input[type="range"] {
             width: 80px;
@@ -99,9 +119,6 @@
         }
         .control-group .value {
             font-weight: bold;
-        }
-        .control-group.horizontal {
-            flex-direction: row;
         }
         .info-top {
             display: flex;
@@ -273,7 +290,8 @@
 
         @media (max-width: 600px) {
             .container { padding: 10px 8px; }
-            h1 { font-size: 1.2em; }
+            h1 { font-size: 1.2em; margin-right: 0; }
+            .btn-fechar { top: 5px; right: 8px; font-size: 0.7em; padding: 4px 10px; }
             .controls-row { flex-direction: column; align-items: stretch; gap: 8px; }
             .control-group { justify-content: space-between; }
             .control-group.vertical { align-items: stretch; }
@@ -307,9 +325,12 @@
 </div>
 
 <div class="container">
+    <!-- Botão Fechar -->
+    <button class="btn-fechar" id="btnFechar">✕ Fechar</button>
+
     <h1>🎵 <span>Audição</span></h1>
 
-    <!-- Controles com quebra de linha após os labels de Velocidade, Repetições, Ordem e Escalas -->
+    <!-- Controles -->
     <div class="controls-row">
         <!-- Velocidade (vertical) -->
         <div class="control-group vertical">
@@ -320,7 +341,7 @@
             </div>
         </div>
 
-        <!-- Repetições (vertical) -->
+        <!-- Dividir Som (vertical) – antes "Repetições" -->
         <div class="control-group vertical">
             <label for="repeticoesSelect">🔁 Dividir Som:</label>
             <select id="repeticoesSelect">
@@ -1064,6 +1085,7 @@
     const errosLabel = document.getElementById('errosLabel');
     const btnPlay = document.getElementById('btnPlay');
     const btnRepeat = document.getElementById('btnRepeat');
+    const btnFechar = document.getElementById('btnFechar');
     const legendaEl = document.getElementById('legenda');
     const overlay = document.getElementById('orientationOverlay');
     const speedSlider = document.getElementById('speedSlider');
@@ -1071,6 +1093,22 @@
     const repeticoesSelect = document.getElementById('repeticoesSelect');
     const tonalidadeSelect = document.getElementById('tonalidadeSelect');
     const ordemSelect = document.getElementById('ordemSelect');
+
+    // ============================================================
+    //  BOTÃO FECHAR
+    // ============================================================
+    btnFechar.addEventListener('click', function() {
+        enviarResultado();
+        // Tenta fechar a página
+        if (window.close) {
+            window.close();
+        }
+        // Se não fechar (ex: janela principal), redireciona para about:blank
+        // Isso também dispara o beforeunload se ainda não foi chamado
+        if (!window.closed) {
+            window.location.href = 'about:blank';
+        }
+    });
 
     // ============================================================
     //  VARIÁVEIS DE ESTADO
@@ -1666,24 +1704,7 @@
     //  ENVIO DE RESULTADO VIA WHATSAPP (ao fechar)
     // ============================================================
     window.addEventListener('beforeunload', function(e) {
-        if (acertos >= 10) {
-            const total = acertos + erros;
-            const tonalidadesSelecionadas = Array.from(tonalidadeSelect.selectedOptions)
-                .map(o => o.value)
-                .filter(v => v !== 'todas')
-                .join(', ') || 'Nenhuma';
-            const mensagem = `📊 *Resumo do treino de escalas*%0A` +
-                             `✅ Acertos: ${acertos}%0A` +
-                             `❌ Erros: ${erros}%0A` +
-                             `📌 Total: ${total}%0A` +
-                             `🎼 Tonalidades: ${tonalidadesSelecionadas}%0A` +
-                             `📊 Ordem: ${ordemSelect.value === 'mista' ? 'Mista' : 'Sequencial'}`;
-            const confirmar = confirm(`Você tem ${acertos} acertos. Deseja enviar o resultado pelo WhatsApp?`);
-            if (confirmar) {
-                const url = `https://wa.me/?text=${mensagem}`;
-                window.open(url, '_blank');
-            }
-        }
+        enviarResultado();
     });
 
     // ============================================================
@@ -1791,6 +1812,29 @@
             }
         }, 300);
     });
+
+    function enviarResultado() {
+        if (acertos >= 0) {
+            const total = acertos + erros;
+            const tonalidadesSelecionadas = Array.from(tonalidadeSelect.selectedOptions)
+                .map(o => o.value)
+                .filter(v => v !== 'todas')
+                .join(', ') || 'Nenhuma';
+            const mensagem = `📊 *Resumo do treino de escalas*%0A` +
+                             `✅ Acertos: ${acertos}%0A` +
+                             `❌ Erros: ${erros}%0A` +
+                             `📌 Total: ${total}%0A` +
+                             `🎼 Tonalidades: ${tonalidadesSelecionadas}%0A` +
+                             `📊 Ordem: ${ordemSelect.value === 'mista' ? 'Mista' : 'Sequencial'}`;
+            const confirmar = confirm(`Você tem ${acertos} acertos. Deseja enviar o resultado pelo WhatsApp?`);
+            if (confirmar) {
+                const url = `https://wa.me/?text=${mensagem}`;
+                window.open(url, '_blank');
+            }
+        }
+    }
+
+
 </script>
 </body>
 </html>
