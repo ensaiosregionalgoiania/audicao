@@ -328,7 +328,7 @@
     <!-- Botão Fechar -->
     <button class="btn-fechar" id="btnFechar">✕ Fechar</button>
 
-    <h1>🎵 <span>Audição</span></h1>
+    <h1>🎵 <span>Audição1</span></h1>
 
     <!-- Controles -->
     <div class="controls-row">
@@ -1815,6 +1815,7 @@
 
     function enviarResultado() {
         if (acertos >= 10) {
+            alert(acertos)
             const total = acertos + erros;
             const tonalidadesSelecionadas = Array.from(tonalidadeSelect.selectedOptions)
                 .map(o => o.value)
@@ -1828,6 +1829,7 @@
                              `📊 Ordem: ${ordemSelect.value === 'mista' ? 'Mista' : 'Sequencial'}`;
             const confirmar = confirm(`Você tem ${acertos} acertos. Deseja enviar o resultado pelo WhatsApp?`);
             if (confirmar) {
+                alert("2")
                 const url = `https://wa.me/?text=${mensagem}`;
                 window.open(url, '_blank');
             }
