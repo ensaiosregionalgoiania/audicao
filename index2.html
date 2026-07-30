@@ -41,13 +41,13 @@
             flex-wrap: wrap;
             gap: 12px 15px;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* alinhamento ao topo para os grupos verticais */
             margin-bottom: 10px;
             padding: 8px 12px;
             background: #f0f2ff;
             border-radius: 12px;
         }
-        .controls-row .control-group {
+        .control-group {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -55,24 +55,27 @@
             font-weight: 500;
             color: #333;
         }
-        .controls-row .control-group label {
+        /* Grupos verticais: label em cima, controle abaixo */
+        .control-group.vertical {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+        }
+        .control-group label {
             display: flex;
             align-items: center;
             gap: 4px;
             cursor: pointer;
             font-weight: inherit;
         }
-        .controls-row input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            accent-color: #764ba2;
+        .control-group.vertical label {
+            font-weight: 500; /* mantém destaque */
+        }
+        .control-group input[type="range"] {
+            width: 80px;
             cursor: pointer;
         }
-        .controls-row input[type="range"] {
-            width: 80px; /* reduzido */
-            cursor: pointer;
-        }
-        .controls-row select {
+        .control-group select {
             border-radius: 20px;
             border: 2px solid #667eea;
             background: white;
@@ -83,21 +86,22 @@
             cursor: pointer;
             transition: 0.2s;
             padding: 2px 8px;
-            min-width: 100px;
-            max-width: 140px;
+            min-width: 60px;
+            max-width: 80px;
             height: 30px;
         }
-        .controls-row select:focus {
+        .control-group select:focus {
             border-color: #764ba2;
             box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.3);
         }
-        .controls-row select option {
+        .control-group select option {
             padding: 2px 6px;
         }
-        .controls-row .control-group label[for="tonalidadeSelect"],
-        .controls-row .control-group label[for="ordemSelect"] {
-            font-weight: normal;
-            white-space: nowrap;
+        .control-group .value {
+            font-weight: bold;
+        }
+        .control-group.horizontal {
+            flex-direction: row;
         }
         .info-top {
             display: flex;
@@ -271,9 +275,10 @@
             .container { padding: 10px 8px; }
             h1 { font-size: 1.2em; }
             .controls-row { flex-direction: column; align-items: stretch; gap: 8px; }
-            .controls-row .control-group { justify-content: space-between; }
-            .controls-row input[type="range"] { width: 100%; }
-            .controls-row select { max-width: 100%; width: 100%; }
+            .control-group { justify-content: space-between; }
+            .control-group.vertical { align-items: stretch; }
+            .control-group input[type="range"] { width: 100%; }
+            .control-group select { max-width: 100%; width: 100%; }
             .info-top { font-size: 0.7em; padding: 3px 6px; }
             .nota-btn { padding: 4px 10px; font-size: 0.8em; }
             .btn { padding: 8px 12px; font-size: 0.8em; min-width: 50px; }
@@ -304,25 +309,32 @@
 <div class="container">
     <h1>🎵 <span>Audição</span></h1>
 
-    <!-- Controles em uma única linha -->
+    <!-- Controles com quebra de linha após os labels de Velocidade, Repetições, Ordem e Escalas -->
     <div class="controls-row">
-        <!-- Velocidade -->
-        <div class="control-group">
-            <label>⏱️ Velocidade</label>
-            <input type="range" id="speedSlider" min="30" max="200" value="100">
-            <span class="value" id="speedValue">1.0x</span>
+        <!-- Velocidade (vertical) -->
+        <div class="control-group vertical">
+            <label for="speedSlider">⏱️ Velocidade</label>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="range" id="speedSlider" min="30" max="200" value="100">
+                <span class="value" id="speedValue">1.0x</span>
+            </div>
         </div>
 
-        <!-- Dividir -->
-        <div class="control-group">
-            <label>
-                <input type="checkbox" id="dividirCheckbox">
-                🎵 Dividir
-            </label>
+        <!-- Repetições (vertical) -->
+        <div class="control-group vertical">
+            <label for="repeticoesSelect">🔁 Dividir Som:</label>
+            <select id="repeticoesSelect">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+            </select>
         </div>
 
-        <!-- Ordem (select único) -->
-        <div class="control-group">
+        <!-- Ordem (vertical) -->
+        <div class="control-group vertical">
             <label for="ordemSelect">📊 Ordem:</label>
             <select id="ordemSelect">
                 <option value="sequencial">Sequencial</option>
@@ -330,8 +342,8 @@
             </select>
         </div>
 
-        <!-- Escalas (select múltiplo) -->
-        <div class="control-group">
+        <!-- Escalas (vertical) -->
+        <div class="control-group vertical">
             <label for="tonalidadeSelect">🎼 Escalas:</label>
             <select id="tonalidadeSelect" multiple size="1">
                 <!-- preenchido pelo JavaScript -->
@@ -1056,7 +1068,7 @@
     const overlay = document.getElementById('orientationOverlay');
     const speedSlider = document.getElementById('speedSlider');
     const speedValue = document.getElementById('speedValue');
-    const dividirCheckbox = document.getElementById('dividirCheckbox');
+    const repeticoesSelect = document.getElementById('repeticoesSelect');
     const tonalidadeSelect = document.getElementById('tonalidadeSelect');
     const ordemSelect = document.getElementById('ordemSelect');
 
@@ -1318,7 +1330,7 @@
     }
 
     // ============================================================
-    //  INTERFACE E LÓGICA (resumida)
+    //  INTERFACE E LÓGICA
     // ============================================================
     function atualizarInterface() {
         if (!CONJUNTOS_FILTRADOS.length) {
@@ -1366,26 +1378,18 @@
         const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
         if (!conjuntoAtual) return [];
         const letras = conjuntoAtual.notas.map(n => n.letra);
-        const dividir = dividirCheckbox.checked;
+        const repeticoes = parseInt(repeticoesSelect.value) || 1;
         let sequencia = [];
 
-        if (dividir) {
-            const repeticoes = 3;
-            for (let i = 0; i < letras.length; i++) {
-                for (let r = 0; r < repeticoes; r++) {
-                    sequencia.push(letras[i]);
-                }
-            }
-            for (let i = letras.length - 2; i >= 0; i--) {
-                for (let r = 0; r < repeticoes; r++) {
-                    sequencia.push(letras[i]);
-                }
-            }
-        } else {
-            for (let i = 0; i < letras.length; i++) {
+        // Subida: cada nota repetida N vezes
+        for (let i = 0; i < letras.length; i++) {
+            for (let r = 0; r < repeticoes; r++) {
                 sequencia.push(letras[i]);
             }
-            for (let i = letras.length - 2; i >= 0; i--) {
+        }
+        // Descida: do penúltimo até o primeiro (sem repetir a última nota da subida)
+        for (let i = letras.length - 2; i >= 0; i--) {
+            for (let r = 0; r < repeticoes; r++) {
                 sequencia.push(letras[i]);
             }
         }
