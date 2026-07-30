@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎵 Escalas com repetição</title>
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.4/build/cjs/vexflow.js"></script>
+    <style>
+        /* Mantido igual ao anterior, com ajuste para o select ficar em uma linha */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            background: white;
+            border-radius: 25px;
+            padding: 15px 12px;
+            max-width: 950px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 1.4em;
+            margin-bottom: 4px;
+        }
+        h1 span {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px 20px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: #f0f2ff;
+            border-radius: 12px;
+        }
+        .controls-row .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            font-weight: 500;
+            color: #333;
+        }
+        .controls-row .control-group label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .controls-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #764ba2;
+            cursor: pointer;
+        }
+        .tonalidade-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 15px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: #f0f2ff;
+            border-radius: 12px;
+        }
+        .tonalidade-selector select {
+            padding: 4px 8px;
+            border-radius: 20px;
+            border: 2px solid #667eea;
+            background: white;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #333;
+            outline: none;
+            cursor: pointer;
+            transition: 0.2s;
+            min-width: 180px;
+            max-height: 36px;  /* Para mostrar apenas uma linha */
+        }
+        .tonalidade-selector select:focus {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.3);
+        }
+        .tonalidade-selector select option {
+            padding: 4px 8px;
+        }
+        .tonalidade-selector label {
+            font-weight: bold;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+        .info-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+            padding: 4px 10px;
+            background: #f0f2ff;
+            border-radius: 10px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.8em;
+        }
+        .info-top .conjunto-label { color: #667eea; font-weight: bold; }
+        .info-top .rodada { color: #FF9800; font-weight: bold; }
+        .info-top .placar { color: #4CAF50; font-weight: bold; }
+        .info-top .placar span.erros { color: #EF476F; }
+        .partitura-container {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 4px 3px;
+            min-height: 110px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: auto;
+        }
+        #notation {
+            width: 100%;
+            min-height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #notation svg {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: center;
+            margin: 8px 0 4px;
+            padding: 4px 8px;
+            background: #f0f2ff;
+            border-radius: 12px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            width: 100%;
+            justify-content: center;
+        }
+        .btn {
+            border: none;
+            padding: 10px 16px;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1 1 auto;
+            min-width: 70px;
+            text-align: center;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn:active:not(:disabled) { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-play { background: linear-gradient(135deg, #4CAF50, #45a049); box-shadow: 0 4px 15px rgba(76,175,80,0.3); }
+        .btn-repeat { background: linear-gradient(135deg, #FF9800, #F57C00); box-shadow: 0 4px 15px rgba(255,152,0,0.3); }
+        .legenda {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 8px 0 4px;
+        }
+        .nota-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border: 3px solid transparent;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 0.9em;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            user-select: none;
+            flex: 0 1 auto;
+        }
+        .nota-btn .bola { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid #ccc; }
+        .nota-btn:hover:not(:disabled) { transform: scale(1.05); border-color: #667eea; }
+        .nota-btn:active:not(:disabled) { transform: scale(0.95); }
+        .nota-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .nota-btn.acertou { border-color: #4CAF50; background: #e8f5e9; transform: scale(1.05); }
+        .nota-btn.errou { border-color: #EF476F; background: #fce4ec; transform: scale(0.95); animation: shake 0.3s; }
+        .nota-btn.destaque { border-color: #FF9800; background: #fff3e0; box-shadow: 0 0 15px rgba(255,152,0,0.3); }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 1.6em;
+            font-weight: bold;
+            text-align: center;
+            max-width: 90%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            border: 2px solid transparent;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(4px);
+            color: white;
+        }
+        .feedback.sucesso { opacity: 1; background: white; color: #4CAF50; border-color: #4CAF50; backdrop-filter: none; }
+        .feedback.erro { opacity: 1; background: rgba(0,0,0,0.85); color: #EF476F; border-color: #EF476F; backdrop-filter: blur(4px); }
+        .feedback.fim { opacity: 1; background: rgba(0,0,0,0.85); color: #FF9800; border-color: #FF9800; backdrop-filter: blur(4px); }
+        .feedback.icone { 
+            opacity: 1; 
+            background: rgba(0,0,0,0.7); 
+            border-color: #ffd700; 
+            color: #ffd700; 
+            font-size: 5em; 
+            padding: 40px; 
+            backdrop-filter: blur(6px); 
+            border-width: 4px;
+            transition: opacity 0.2s ease;
+        }
+        .feedback:not(.sucesso):not(.erro):not(.fim):not(.icone) { opacity: 0; }
+
+        .orientation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            color: white;
+            font-size: 1.6em;
+            text-align: center;
+            padding: 30px;
+            transition: opacity 0.5s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .orientation-overlay.show { opacity: 1; pointer-events: auto; }
+        .orientation-overlay .icon { font-size: 4em; margin-bottom: 20px; animation: rotate-phone 2s ease-in-out infinite; }
+        .orientation-overlay .sub { font-size: 0.6em; opacity: 0.8; margin-top: 15px; }
+        @keyframes rotate-phone { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+        @media (orientation: landscape) { .orientation-overlay { display: none; } }
+
+        @media (max-width: 600px) {
+            .container { padding: 10px 8px; }
+            h1 { font-size: 1.2em; }
+            .controls-row { flex-direction: column; align-items: stretch; gap: 8px; }
+            .controls-row .control-group { justify-content: space-between; }
+            .tonalidade-selector { flex-direction: column; align-items: stretch; }
+            .tonalidade-selector select { width: 100%; max-height: 40px; }
+            .info-top { font-size: 0.7em; padding: 3px 6px; }
+            .nota-btn { padding: 4px 10px; font-size: 0.8em; }
+            .btn { padding: 8px 12px; font-size: 0.8em; min-width: 50px; }
+            .feedback { font-size: 1.2em; padding: 15px 25px; }
+            .feedback.icone { font-size: 3.5em; padding: 25px; }
+            .partitura-container { min-height: 90px; padding: 3px 2px; }
+            #notation { min-height: 80px; }
+            .legenda { gap: 6px; }
+            .orientation-overlay { font-size: 1.2em; }
+        }
+        @media (max-width: 400px) {
+            .btn { font-size: 0.7em; padding: 6px 8px; min-width: 40px; }
+            .nota-btn { font-size: 0.65em; padding: 3px 6px; }
+            .info-top { font-size: 0.6em; }
+            .feedback { font-size: 1em; padding: 12px 20px; }
+            .feedback.icone { font-size: 2.8em; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="orientation-overlay show" id="orientationOverlay">
+    <div class="icon">📱</div>
+    <div>Gire o celular para a posição <strong>horizontal</strong></div>
+    <div class="sub">(ou clique para fechar)</div>
+</div>
+
+<div class="container">
+    <h1>🎵 <span>Audição</span></h1>
+
+    <!-- Controles: Velocidade e Dividir -->
+    <div class="controls-row">
+        <div class="control-group">
+            <label>⏱️ Velocidade</label>
+            <input type="range" id="speedSlider" min="30" max="200" value="100">
+            <span class="value" id="speedValue">1.0x</span>
+        </div>
+        <div class="control-group">
+            <label>
+                <input type="checkbox" id="dividirCheckbox">
+                🎵 Dividir notas (3x)
+            </label>
+        </div>
+    </div>
+
+    <!-- Seleção múltipla de tonalidades com <select multiple> em uma linha -->
+    <div class="tonalidade-selector" id="tonalidadeSelector">
+        <label for="tonalidadeSelect">🎼 Tonalidades:</label>
+        <select id="tonalidadeSelect" multiple size="1">
+            <!-- Opções preenchidas dinamicamente -->
+        </select>
+    </div>
+
+    <div class="info-top">
+        <span>🎼 <span class="conjunto-label" id="conjuntoLabel">Carregando...</span></span>
+        <span>🔁 <span class="rodada" id="etapaLabel">1 / 1</span></span>
+        <span class="placar">✅ <span id="acertosLabel">0</span> &nbsp;|&nbsp; <span class="erros">❌ <span id="errosLabel">0</span></span></span>
+    </div>
+
+    <div class="partitura-container">
+        <div id="notation"></div>
+    </div>
+
+    <div class="status-bar">
+        <div class="btn-group">
+            <button class="btn btn-play" id="btnPlay">▶ Tocar</button>
+            <button class="btn btn-repeat" id="btnRepeat" disabled>🔁 Repetir</button>
+        </div>
+    </div>
+
+    <div class="feedback" id="feedbackMsg"></div>
+
+    <div class="legenda" id="legenda"></div>
+</div>
+
+<script>
+    // ============================================================
+    //  LISTA FIXA DE EXERCÍCIOS (com solbfa -> sol;fa corrigido)
+    // ============================================================
+    const LINHAS_CRUDAS = `do;do;mi;sol
+    do;re;fa;la
+    do;mi;sol;si
+    do;fa;la;do'
+    do;sol;si;re'
+    do;la;do';mi'
+    do;si;re';fa'
+    do;do;re;mi
+    do;re;mi;fa
+    do;mi;fa;sol
+    do;fa;sol;la
+    do;sol;la;si
+    do;la;si;do'
+    do;si;do';re'
+    do;do;mi;sol;si
+    do;re;fa;la;do'
+    do;mi;sol;si;re'
+    do;fa;la;do';mi'
+    do;sol;si;re';fa'
+    do;la;do';mi';sol'
+    do;si;re';fa';la'
+    do;do;re;mi;fa
+    do;re;mi;fa;sol
+    do;mi;fa;sol;la
+    do;fa;sol;la;si
+    do;sol;la;si;do'
+    do;la;si';do';re'
+    do;si;do';re';mi'
+    do;do;re;mi;fa;sol
+    do;re;mi;fa;sol;la
+    do;mi;fa;sol;la;si
+    do;fa;sol;la;si;do'
+    do;sol;la;si;do';re'
+    do;la;si';do';re';mi'
+    do;si;do';re';mi';fa
+    do;do;re;mi;fa;sol;la
+    do;re;mi;fa;sol;la;si
+    do;mi;fa;sol;la;si;do'
+    do;fa;sol;la;si;do';re'
+    do;sol;la;si;do';re';mi'
+    do;la;si';do';re';mi';fa'
+    do;si;do';re';mi';fa';sol'
+    do;do;re;mi;fa;sol;la;si
+    do;re;mi;fa;sol;la;si;do'
+    do;mi;fa;sol;la;si;do';re'
+    do;fa;sol;la;si;do';re';mi'
+    do;sol;la;si;do';re';mi';fa'
+    do;la;si';do';re';mi';fa';sol'
+    do;si;do';re';mi';fa';sol';la'
+    do;do;re;mi;fa;sol;la;si;do'
+    do;re;mi;fa;sol;la;si;do';re'
+    do;mi;fa;sol;la;si;do';re';mi'
+    do;fa;sol;la;si;do';re';mi';fa'
+    do;sol;la;si;do';re';mi';fa';sol'
+    do;la;si';do';re';mi';fa';sol';la'
+    do;si;do';re';mi';fa';sol';la';si'
+
+    fa;fa;la;do'
+    fa;sol;sib;re'
+    fa;la;do';mi'
+    fa;sib;re';fa'
+    fa;do;mi;sol
+    fa;re;fa;la
+    fa;mi;sol;sib
+    fa;fa;sol;la
+    fa;sol;la;sib
+    fa;la;sib;do'
+    fa;sib;do';re'
+    fa;do;re;mi
+    fa;re;mi;fa
+    fa;mi;fa;sol
+    fa;fa;la;do';mi'
+    fa;sol;sib;re';fa'
+    fa;la;do';mi';sol'
+    fa;sib;re';fa';la'
+    fa;do;mi;sol;sib
+    fa;re;fa;la;do'
+    fa;mi;sol;sib;re'
+    fa;fa;sol;la;sib
+    fa;sol;la;sib;do'
+    fa;la;sib';do';re'
+    fa;sib;do';re';mi'
+    fa;do;re;mi;fa
+    fa;re;mi;fa;sol
+    fa;mi;fa;sol;la
+    fa;fa;sol;la;sib;do'
+    fa;sol;la;sib;do';re'
+    fa;la;sib';do';re';mi'
+    fa;sib;do';re';mi';fa
+    fa;do;re;mi;fa;sol
+    fa;re;mi;fa;sol;la
+    fa;mi;fa;sol;la;sib
+    fa;fa;sol;la;sib;do';re'
+    fa;sol;la;sib;do';re';mi'
+    fa;la;sib';do';re';mi';fa'
+    fa;sib;do';re';mi';fa';sol'
+    fa;do;re;mi;fa;sol;la
+    fa;re;mi;fa;sol;la;sib
+    fa;mi;fa;sol;fa;la;sib;do'
+    fa;fa;sol;la;sib;do';re';mi'
+    fa;sol;la;sib;do';re';mi';fa'
+    fa;la;sib';do';re';mi';fa';sol'
+    fa;sib;do';re';mi';fa';sol';la'
+    fa;do;re;mi;fa;sol;la;sib
+    fa;re;mi;fa;sol;la;sib;do'
+    fa;mi;fa;sol;la;sib;do';re'
+    fa;fa;sol;la;sib;do';re';mi';fa'
+    fa;sol;la;sib;do';re';mi';fa';sol'
+    fa;la;sib';do';re';mi';fa';sol';la'
+    fa;sib;do';re';mi';fa';sol';la';sib'
+    fa;do;re;mi;fa;sol;la;sib;do'
+    fa;re;mi;fa;sol;la;sib;do';re'
+    fa;mi;fa;sol;la;sib;do';re';mi'
+
+    sol;sol;si;re'
+    sol;la;do';mi'
+    sol;si;re';fa#'
+    sol;do;mi;sol
+    sol;re;fa#;la
+    sol;mi;sol;si
+    sol;fa#;la;do'
+    sol;sol;la;si
+    sol;la;si;do'
+    sol;si;do';re'
+    sol;do;re;mi
+    sol;re;mi;fa#
+    sol;mi;fa#;sol
+    sol;fa#;sol;la
+    sol;sol;si;re';fa#'
+    sol;la;do';mi';sol'
+    sol;si;re';fa#';la'
+    sol;do;mi;sol;si
+    sol;re;fa#;la;do'
+    sol;mi;sol;si;re'
+    sol;fa#;la;do';mi'
+    sol;sol;la;si;do'
+    sol;la;si';do';re'
+    sol;si;do';re';mi'
+    sol;do;re;mi;fa#
+    sol;re;mi;fa#;sol
+    sol;mi;fa#;sol;la
+    sol;fa#;sol;la;si
+    sol;sol;la;si;do';re'
+    sol;la;si';do';re';mi'
+    sol;si;do';re';mi';fa#
+    sol;do;re;mi;fa#;sol
+    sol;re;mi;fa#;sol;la
+    sol;mi;fa#;sol;la;si
+    sol;fa#;sol;la;si;do'
+    sol;sol;la;si;do';re';mi'
+    sol;la;si';do';re';mi';fa#'
+    sol;si;do';re';mi';fa#';sol'
+    sol;do;re;mi;fa#;sol;la
+    sol;re;mi;fa#;sol;la;si
+    sol;mi;fa#;sol;la;si;do'
+    sol;fa#;sol;la;si;do';re'
+    sol;sol;la;si;do';re';mi';fa#'
+    sol;la;si';do';re';mi';fa#';sol'
+    sol;si;do';re';mi';fa#';sol';la'
+    sol;do;re;mi;fa#;sol;la;si
+    sol;re;mi;fa#;sol;la;si;do'
+    sol;mi;fa#;sol;la;si;do';re'
+    sol;fa#;sol;la;si;do';re';mi'
+    sol;sol;la;si;do';re';mi';fa#';sol'
+    sol;la;si';do';re';mi';fa#';sol';la'
+    sol;si;do';re';mi';fa#';sol';la';si'
+    sol;do;re;mi;fa#;sol;la;si;do'
+    sol;re;mi;fa#;sol;la;si;do';re'
+    sol;mi;fa#;sol;la;si;do';re';mi'
+    sol;fa#;sol;la;si;do';re';mi';fa#'
+
+    sib;sib;re';fa'
+    sib;do;mib;sol
+    sib;re;fa;la
+    sib;mib;sol;sib
+    sib;fa;la;do'
+    sib;sol;sib;re'
+    sib;la;do';mib'
+    sib;sib;do';re'
+    sib;do;re;mib
+    sib;re;mib;fa
+    sib;mib;fa;sol
+    sib;fa;sol;la
+    sib;sol;la;sib
+    sib;la;sib;do'
+    sib;sib;re';fa';la'
+    sib;do;mib;sol;sib
+    sib;re;fa;la;do'
+    sib;mib;sol;sib;re'
+    sib;fa;la;do';mib'
+    sib;sol;sib;re';fa'
+    sib;la;do';mib';sol'
+    sib;sib;do';re';mib'
+    sib;do;re;mib;fa
+    sib;re;mib;fa;sol
+    sib;mib;fa;sol;la
+    sib;fa;sol;la;sib
+    sib;sol;la;sib;do'
+    sib;la;sib';do';re'
+    sib;sib;do';re';mib';fa
+    sib;do;re;mib;fa;sol
+    sib;re;mib;fa;sol;la
+    sib;mib;fa;sol;la;sib
+    sib;fa;sol;la;sib;do'
+    sib;sol;la;sib;do';re'
+    sib;la;sib';do';re';mib'
+    sib;sib;do';re';mib';fa';sol'
+    sib;do;re;mib;fa;sol;la
+    sib;re;mib;fa;sol;la;sib
+    sib;mib;fa;sol;fa;la;sib;do'
+    sib;fa;sol;la;sib;do';re'
+    sib;sol;la;sib;do';re';mib'
+    sib;la;sib';do';re';mib';fa'
+    sib;sib;do';re';mib';fa';sol';la'
+    sib;do;re;mib;fa;sol;la;sib
+    sib;re;mib;fa;sol;la;sib;do'
+    sib;mib;fa;sol;la;sib;do';re'
+    sib;fa;sol;la;sib;do';re';mib'
+    sib;sol;la;sib;do';re';mib';fa'
+    sib;la;sib';do';re';mib';fa';sol'
+    sib;sib;do';re';mib';fa';sol';la';sib'
+    sib;do;re;mib;fa;sol;la;sib;do'
+    sib;re;mib;fa;sol;la;sib;do';re'
+    sib;mib;fa;sol;la;sib;do';re';mib'
+    sib;fa;sol;la;sib;do';re';mib';fa'
+    sib;sol;la;sib;do';re';mib';fa';sol'
+    sib;la;sib';do';re';mib';fa';sol';la'
+
+    re;re;fa#;la
+    re;mi;sol;si
+    re;fa#;la;do#'
+    re;sol;si;re'
+    re;la;do#';mi'
+    re;si;re';fa#'
+    re;do#;mi;sol
+    re;re;mi;fa#
+    re;mi;fa#;sol
+    re;fa#;sol;la
+    re;sol;la;si
+    re;la;si;do#'
+    re;si;do#';re'
+    re;do#;re;mi
+    re;re;fa#;la;do#'
+    re;mi;sol;si;re'
+    re;fa#;la;do#';mi'
+    re;sol;si;re';fa#'
+    re;la;do#';mi';sol'
+    re;si;re';fa#';la'
+    re;do#;mi;sol;si
+    re;re;mi;fa#;sol
+    re;mi;fa#;sol;la
+    re;fa#;sol;la;si
+    re;sol;la;si;do#'
+    re;la;si';do#';re'
+    re;si;do#';re';mi'
+    re;do#;re;mi;fa#
+    re;re;mi;fa#;sol;la
+    re;mi;fa#;sol;la;si
+    re;fa#;sol;la;si;do#'
+    re;sol;la;si;do#';re'
+    re;la;si';do#';re';mi'
+    re;si;do#';re';mi';fa#
+    re;do#;re;mi;fa#;sol
+    re;re;mi;fa#;sol;la;si
+    re;mi;fa#;sol;la;si;do#'
+    re;fa#;sol;la;si;do#';re'
+    re;sol;la;si;do#';re';mi'
+    re;la;si';do#';re';mi';fa#'
+    re;si;do#';re';mi';fa#';sol'
+    re;do#;re;mi;fa#;sol;la
+    re;re;mi;fa#;sol;la;si;do#'
+    re;mi;fa#;sol;la;si;do#';re'
+    re;fa#;sol;la;si;do#';re';mi'
+    re;sol;la;si;do#';re';mi';fa#'
+    re;la;si';do#';re';mi';fa#';sol'
+    re;si;do#';re';mi';fa#';sol';la'
+    re;do#;re;mi;fa#;sol;la;si
+    re;re;mi;fa#;sol;la;si;do#';re'
+    re;mi;fa#;sol;la;si;do#';re';mi'
+    re;fa#;sol;la;si;do#';re';mi';fa#'
+    re;sol;la;si;do#';re';mi';fa#';sol'
+    re;la;si';do#';re';mi';fa#';sol';la'
+    re;si;do#';re';mi';fa#';sol';la';si'
+    re;do#;re;mi;fa#;sol;la;si;do#'
+
+    mib;mib;sol;sib
+    mib;fa;lab;do'
+    mib;sol;sib;re'
+    mib;lab;do';mib'
+    mib;sib;re';fa'
+    mib;do;mib;sol
+    mib;re;fa;lab
+    mib;mib;fa;sol
+    mib;fa;sol;lab
+    mib;sol;lab;sib
+    mib;lab;sib;do'
+    mib;sib;do';re'
+    mib;do;re;mib
+    mib;re;mib;fa
+    mib;mib;sol;sib;re'
+    mib;fa;lab;do';mib'
+    mib;sol;sib;re';fa'
+    mib;lab;do';mib';sol'
+    mib;sib;re';fa';lab'
+    mib;do;mib;sol;sib
+    mib;re;fa;lab;do'
+    mib;mib;fa;sol;lab
+    mib;fa;sol;lab;sib
+    mib;sol;lab;sib;do'
+    mib;lab;sib';do';re'
+    mib;sib;do';re';mib'
+    mib;do;re;mib;fa
+    mib;re;mib;fa;sol
+    mib;mib;fa;sol;lab;sib
+    mib;fa;sol;lab;sib;do'
+    mib;sol;lab;sib;do';re'
+    mib;lab;sib';do';re';mib'
+    mib;sib;do';re';mib';fa
+    mib;do;re;mib;fa;sol
+    mib;re;mib;fa;sol;lab
+    mib;mib;fa;sol;fa;lab;sib;do'
+    mib;fa;sol;lab;sib;do';re'
+    mib;sol;lab;sib;do';re';mib'
+    mib;lab;sib';do';re';mib';fa'
+    mib;sib;do';re';mib';fa';sol'
+    mib;do;re;mib;fa;sol;lab
+    mib;re;mib;fa;sol;lab;sib
+    mib;mib;fa;sol;lab;sib;do';re'
+    mib;fa;sol;lab;sib;do';re';mib'
+    mib;sol;lab;sib;do';re';mib';fa'
+    mib;lab;sib';do';re';mib';fa';sol'
+    mib;sib;do';re';mib';fa';sol';lab'
+    mib;do;re;mib;fa;sol;lab;sib
+    mib;re;mib;fa;sol;lab;sib;do'
+    mib;mib;fa;sol;lab;sib;do';re';mib'
+    mib;fa;sol;lab;sib;do';re';mib';fa'
+    mib;sol;lab;sib;do';re';mib';fa';sol'
+    mib;lab;sib';do';re';mib';fa';sol';lab'
+    mib;sib;do';re';mib';fa';sol';lab';sib'
+    mib;do;re;mib;fa;sol;lab;sib;do'
+    mib;re;mib;fa;sol;lab;sib;do';re'
+
+    la;la;do#';mi'
+    la;si;re';fa#'
+    la;do#;mi;sol#
+    la;re;fa#;la
+    la;mi;sol#;si
+    la;fa#;la;do#'
+    la;sol#;si;re'
+    la;la;si;do#'
+    la;si;do#';re'
+    la;do#;re;mi
+    la;re;mi;fa#
+    la;mi;fa#;sol#
+    la;fa#;sol#;la
+    la;sol#;la;si
+    la;la;do#';mi';sol#'
+    la;si;re';fa#';la'
+    la;do#;mi;sol#;si
+    la;re;fa#;la;do#'
+    la;mi;sol#;si;re'
+    la;fa#;la;do#';mi'
+    la;sol#;si;re';fa#'
+    la;la;si';do#';re'
+    la;si;do#';re';mi'
+    la;do#;re;mi;fa#
+    la;re;mi;fa#;sol#
+    la;mi;fa#;sol#;la
+    la;fa#;sol#;la;si
+    la;sol#;la;si;do#'
+    la;la;si';do#';re';mi'
+    la;si;do#';re';mi';fa#
+    la;do#;re;mi;fa#;sol#
+    la;re;mi;fa#;sol#;la
+    la;mi;fa#;sol#;la;si
+    la;fa#;sol#;la;si;do#'
+    la;sol#;la;si;do#';re'
+    la;la;si';do#';re';mi';fa#'
+    la;si;do#';re';mi';fa#';sol#'
+    la;do#;re;mi;fa#;sol#;la
+    la;re;mi;fa#;sol#;la;si
+    la;mi;fa#;sol#;la;si;do#'
+    la;fa#;sol#;la;si;do#';re'
+    la;sol#;la;si;do#';re';mi'
+    la;la;si';do#';re';mi';fa#';sol#'
+    la;si;do#';re';mi';fa#';sol#';la'
+    la;do#;re;mi;fa#;sol#;la;si
+    la;re;mi;fa#;sol#;la;si;do#'
+    la;mi;fa#;sol#;la;si;do#';re'
+    la;fa#;sol#;la;si;do#';re';mi'
+    la;sol#;la;si;do#';re';mi';fa#'
+    la;la;si';do#';re';mi';fa#';sol#';la'
+    la;si;do#';re';mi';fa#';sol#';la';si'
+    la;do#;re;mi;fa#;sol#;la;si;do#'
+    la;re;mi;fa#;sol#;la;si;do#';re'
+    la;mi;fa#;sol#;la;si;do#';re';mi'
+    la;fa#;sol#;la;si;do#';re';mi';fa#'
+    la;sol#;la;si;do#';re';mi';fa#';sol#'
+
+    lab;lab;do';mib'
+    lab;sib;reb';fa'
+    lab;do;mib;sol
+    lab;reb;fa;lab
+    lab;mib;sol;sib
+    lab;fa;lab;do'
+    lab;sol;sib;reb'
+    lab;lab;sib;do'
+    lab;sib;do';reb'
+    lab;do;reb;mib
+    lab;reb;mib;fa
+    lab;mib;fa;sol
+    lab;fa;sol;lab
+    lab;sol;lab;sib
+    lab;lab;do';mib';sol'
+    lab;sib;reb';fa';lab'
+    lab;do;mib;sol;sib
+    lab;reb;fa;lab;do'
+    lab;mib;sol;sib;reb'
+    lab;fa;lab;do';mib'
+    lab;sol;sib;reb';fa'
+    lab;lab;sib';do';reb'
+    lab;sib;do';reb';mib'
+    lab;do;reb;mib;fa
+    lab;reb;mib;fa;sol
+    lab;mib;fa;sol;lab
+    lab;fa;sol;lab;sib
+    lab;sol;lab;sib;do'
+    lab;lab;sib';do';reb';mib'
+    lab;sib;do';reb';mib';fa
+    lab;do;reb;mib;fa;sol
+    lab;reb;mib;fa;sol;lab
+    lab;mib;fa;sol;lab;sib
+    lab;fa;sol;lab;sib;do'
+    lab;sol;lab;sib;do';reb'
+    lab;lab;sib';do';reb';mib';fa'
+    lab;sib;do';reb';mib';fa';sol'
+    lab;do;reb;mib;fa;sol;lab
+    lab;reb;mib;fa;sol;lab;sib
+    lab;mib;fa;sol;fa;lab;sib;do'
+    lab;fa;sol;lab;sib;do';reb'
+    lab;sol;lab;sib;do';reb';mib'
+    lab;lab;sib';do';reb';mib';fa';sol'
+    lab;sib;do';reb';mib';fa';sol';lab'
+    lab;do;reb;mib;fa;sol;lab;sib
+    lab;reb;mib;fa;sol;lab;sib;do'
+    lab;mib;fa;sol;lab;sib;do';reb'
+    lab;fa;sol;lab;sib;do';reb';mib'
+    lab;sol;lab;sib;do';reb';mib';fa'
+    lab;lab;sib';do';reb';mib';fa';sol';lab'
+    lab;sib;do';reb';mib';fa';sol';lab';sib'
+    lab;do;reb;mib;fa;sol;lab;sib;do'
+    lab;reb;mib;fa;sol;lab;sib;do';reb'
+    lab;mib;fa;sol;lab;sib;do';reb';mib'
+    lab;fa;sol;lab;sib;do';reb';mib';fa'
+    lab;sol;lab;sib;do';reb';mib';fa';sol'
+
+    mi;mi;sol#;si
+    mi;fa#;la;do#'
+    mi;sol#;si;re#'
+    mi;la;do#';mi'
+    mi;si;re#';fa#'
+    mi;do#;mi;sol#
+    mi;re#;fa#;la
+    mi;mi;fa#;sol#
+    mi;fa#;sol#;la
+    mi;sol#;la;si
+    mi;la;si;do#'
+    mi;si;do#';re#'
+    mi;do#;re#;mi
+    mi;re#;mi;fa#
+    mi;mi;sol#;si;re#'
+    mi;fa#;la;do#';mi'
+    mi;sol#;si;re#';fa#'
+    mi;la;do#';mi';sol#'
+    mi;si;re#';fa#';la'
+    mi;do#;mi;sol#;si
+    mi;re#;fa#;la;do#'
+    mi;mi;fa#;sol#;la
+    mi;fa#;sol#;la;si
+    mi;sol#;la;si;do#'
+    mi;la;si';do#';re#'
+    mi;si;do#';re#';mi'
+    mi;do#;re#;mi;fa#
+    mi;re#;mi;fa#;sol#
+    mi;mi;fa#;sol#;la;si
+    mi;fa#;sol#;la;si;do#'
+    mi;sol#;la;si;do#';re#'
+    mi;la;si';do#';re#';mi'
+    mi;si;do#';re#';mi';fa#
+    mi;do#;re#;mi;fa#;sol#
+    mi;re#;mi;fa#;sol#;la
+    mi;mi;fa#;sol#;la;si;do#'
+    mi;fa#;sol#;la;si;do#';re#'
+    mi;sol#;la;si;do#';re#';mi'
+    mi;la;si';do#';re#';mi';fa#'
+    mi;si;do#';re#';mi';fa#';sol#'
+    mi;do#;re#;mi;fa#;sol#;la
+    mi;re#;mi;fa#;sol#;la;si
+    mi;mi;fa#;sol#;la;si;do#';re#'
+    mi;fa#;sol#;la;si;do#';re#';mi'
+    mi;sol#;la;si;do#';re#';mi';fa#'
+    mi;la;si';do#';re#';mi';fa#';sol#'
+    mi;si;do#';re#';mi';fa#';sol#';la'
+    mi;do#;re#;mi;fa#;sol#;la;si
+    mi;re#;mi;fa#;sol#;la;si;do#'
+    mi;mi;fa#;sol#;la;si;do#';re#';mi'
+    mi;fa#;sol#;la;si;do#';re#';mi';fa#'
+    mi;sol#;la;si;do#';re#';mi';fa#';sol#'
+    mi;la;si';do#';re#';mi';fa#';sol#';la'
+    mi;si;do#';re#';mi';fa#';sol#';la';si'
+    mi;do#;re#;mi;fa#;sol#;la;si;do#'
+    mi;re#;mi;fa#;sol#;la;si;do#';re#'
+
+    reb;reb;fa;lab
+    reb;mib;solb;sib
+    reb;fa;lab;do'
+    reb;solb;sib;reb'
+    reb;lab;do';mib'
+    reb;sib;reb';fa'
+    reb;do;mib;solb
+    reb;reb;mib;fa
+    reb;mib;fa;solb
+    reb;fa;solb;lab
+    reb;solb;lab;sib
+    reb;lab;sib;do'
+    reb;sib;do';reb'
+    reb;do;reb;mib
+    reb;reb;fa;lab;do'
+    reb;mib;solb;sib;reb'
+    reb;fa;lab;do';mib'
+    reb;solb;sib;reb';fa'
+    reb;lab;do';mib';solb'
+    reb;sib;reb';fa';lab'
+    reb;do;mib;solb;sib
+    reb;reb;mib;fa;solb
+    reb;mib;fa;solb;lab
+    reb;fa;solb;lab;sib
+    reb;solb;lab;sib;do'
+    reb;lab;sib';do';reb'
+    reb;sib;do';reb';mib'
+    reb;do;reb;mib;fa
+    reb;reb;mib;fa;solb;lab
+    reb;mib;fa;solb;lab;sib
+    reb;fa;solb;lab;sib;do'
+    reb;solb;lab;sib;do';reb'
+    reb;lab;sib';do';reb';mib'
+    reb;sib;do';reb';mib';fa
+    reb;do;reb;mib;fa;solb
+    reb;reb;mib;fa;solb;lab;sib
+    reb;mib;fa;solbfa;lab;sib;do'
+    reb;fa;solb;lab;sib;do';reb'
+    reb;solb;lab;sib;do';reb';mib'
+    reb;lab;sib';do';reb';mib';fa'
+    reb;sib;do';reb';mib';fa';solb'
+    reb;do;reb;mib;fa;solb;lab
+    reb;reb;mib;fa;solb;lab;sib;do'
+    reb;mib;fa;solb;lab;sib;do';reb'
+    reb;fa;solb;lab;sib;do';reb';mib'
+    reb;solb;lab;sib;do';reb';mib';fa'
+    reb;lab;sib';do';reb';mib';fa';solb'
+    reb;sib;do';reb';mib';fa';solb';lab'
+    reb;do;reb;mib;fa;solb;lab;sib
+    reb;reb;mib;fa;solb;lab;sib;do';reb'
+    reb;mib;fa;solb;lab;sib;do';reb';mib'
+    reb;fa;solb;lab;sib;do';reb';mib';fa'
+    reb;solb;lab;sib;do';reb';mib';fa';solb'
+    reb;lab;sib';do';reb';mib';fa';solb';lab'
+    reb;sib;do';reb';mib';fa';solb';lab';sib'
+    reb;do;reb;mib;fa;solb;lab;sib;do'`;
+
+    // ============================================================
+    //  MAPEAMENTO DE NOTAS
+    // ============================================================
+    const MAPA_NOTAS = {
+        'do': 'C', 'do#': 'C#', 'dob': 'Db',
+        're': 'D', 're#': 'D#', 'reb': 'Db',
+        'mi': 'E', 'mi#': 'E#', 'mib': 'Eb',
+        'fa': 'F', 'fa#': 'F#', 'fab': 'Fb',
+        'sol': 'G', 'sol#': 'G#', 'solb': 'Gb',
+        'la': 'A', 'la#': 'A#', 'lab': 'Ab',
+        'si': 'B', 'si#': 'B#', 'sib': 'Bb'
+    };
+
+    const MAPA_NOMES_EXIBICAO = {
+        'C': 'Dó', 'C#': 'Dó#', 'Db': 'Ré♭',
+        'D': 'Ré', 'D#': 'Ré#', 'Eb': 'Mi♭',
+        'E': 'Mi', 'F': 'Fá', 'F#': 'Fá#', 'Gb': 'Sol♭',
+        'G': 'Sol', 'G#': 'Sol#', 'Ab': 'Lá♭',
+        'A': 'Lá', 'A#': 'Lá#', 'Bb': 'Si♭',
+        'B': 'Si'
+    };
+
+    const MAPA_CORES = {
+        'C': '#b13e3e', 'C#': '#b13e3e', 'Db': '#c0762b',
+        'D': '#c0762b', 'D#': '#c0762b', 'Eb': '#b8942a',
+        'E': '#b8942a', 'F': '#3f8040', 'F#': '#3f8040', 'Gb': '#2a6b8f',
+        'G': '#2a6b8f', 'G#': '#2a6b8f', 'Ab': '#7a4f9e',
+        'A': '#7a4f9e', 'A#': '#7a4f9e', 'Bb': '#a54b6b',
+        'B': '#a54b6b'
+    };
+
+    const FREQ_BASE = {
+        'C': 261.63, 'C#': 277.18, 'Db': 277.18,
+        'D': 293.66, 'D#': 311.13, 'Eb': 311.13,
+        'E': 329.63, 'F': 349.23, 'F#': 369.99, 'Gb': 369.99,
+        'G': 392.00, 'G#': 415.30, 'Ab': 415.30,
+        'A': 440.00, 'A#': 466.16, 'Bb': 466.16,
+        'B': 493.88
+    };
+
+    // ============================================================
+    //  FUNÇÕES AUXILIARES
+    // ============================================================
+    function notaParaObjeto(notaStr) {
+        let n = notaStr.trim().toLowerCase();
+        let oitava = 4;
+        let base = n;
+        if (n.endsWith("''")) {
+            oitava = 6;
+            base = n.slice(0, -2);
+        } else if (n.endsWith("'")) {
+            oitava = 5;
+            base = n.slice(0, -1);
+        }
+        if (base === 'solfa') base = 'sol';
+        let letra = MAPA_NOTAS[base];
+        if (!letra) {
+            console.warn('Nota desconhecida:', base);
+            return null;
+        }
+        const key = letra.toLowerCase() + '/' + oitava;
+        const nomeExib = MAPA_NOMES_EXIBICAO[letra] || letra;
+        const freq = FREQ_BASE[letra] * Math.pow(2, oitava - 4);
+        const cor = MAPA_CORES[letra] || '#333';
+
+        return {
+            key: key,
+            nome: nomeExib,
+            cor: cor,
+            freq: freq,
+            letra: letra
+        };
+    }
+
+    function processarLista() {
+        const linhas = LINHAS_CRUDAS.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const conjuntos = [];
+        linhas.forEach(linha => {
+            const partes = linha.split(';').map(p => p.trim());
+            if (partes.length < 2) return;
+            const tonalidade = partes[0].toLowerCase();
+            const notasStr = partes.slice(1);
+            const notasObj = [];
+            let erro = false;
+            for (let ns of notasStr) {
+                if (ns === '') continue;
+                const obj = notaParaObjeto(ns);
+                if (obj) {
+                    notasObj.push(obj);
+                } else {
+                    erro = true;
+                    break;
+                }
+            }
+            if (!erro && notasObj.length > 0) {
+                const nome = `${tonalidade.charAt(0).toUpperCase() + tonalidade.slice(1)} - ${notasObj.map(n => n.nome).join(' ')}`;
+                conjuntos.push({
+                    tonalidade: tonalidade,
+                    nome: nome,
+                    notas: notasObj
+                });
+            }
+        });
+        return conjuntos;
+    }
+
+    // ============================================================
+    //  DOM ELEMENTOS
+    // ============================================================
+    const notationEl = document.getElementById('notation');
+    const feedbackMsg = document.getElementById('feedbackMsg');
+    const conjuntoLabel = document.getElementById('conjuntoLabel');
+    const etapaLabel = document.getElementById('etapaLabel');
+    const acertosLabel = document.getElementById('acertosLabel');
+    const errosLabel = document.getElementById('errosLabel');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnRepeat = document.getElementById('btnRepeat');
+    const legendaEl = document.getElementById('legenda');
+    const overlay = document.getElementById('orientationOverlay');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    const dividirCheckbox = document.getElementById('dividirCheckbox');
+    const tonalidadeSelect = document.getElementById('tonalidadeSelect');
+
+    // ============================================================
+    //  VARIÁVEIS DE ESTADO
+    // ============================================================
+    let audioCtx = null;
+    let masterGainNode = null;
+    let estaTocando = false;
+    let aguardandoResposta = false;
+    let notaEsperada = null;
+    let notaEsperadaObj = null;
+    let timeoutIds = [];
+    let notaDestaque = -1;
+    let acertos = 0;
+    let erros = 0;
+    let conjuntoIndex = 0;
+    let CONJUNTOS_TODOS = [];
+    let CONJUNTOS_FILTRADOS = [];
+    let TOTAL_CONJUNTOS = 0;
+    let jogoTerminado = false;
+    let perguntaConcluida = false;
+    let timeoutsPergunta = [];
+
+    // ============================================================
+    //  FUNÇÃO PARA REORDENAR INTERCALADO (usado quando "Todas" está ativo)
+    // ============================================================
+    function reordenarIntercalado(conjuntos) {
+        // Agrupar por tonalidade na ordem especificada
+        const ordemTonalidades = ['do', 'fa', 'sol', 'sib', 're', 'mib', 'la', 'lab', 'mi', 'reb'];
+        const grupos = {};
+        conjuntos.forEach(c => {
+            if (!grupos[c.tonalidade]) grupos[c.tonalidade] = [];
+            grupos[c.tonalidade].push(c);
+        });
+        // Intercalar pegando o primeiro de cada, depois o segundo, etc.
+        const resultado = [];
+        let maxLen = 0;
+        ordemTonalidades.forEach(ton => {
+            if (grupos[ton] && grupos[ton].length > maxLen) maxLen = grupos[ton].length;
+        });
+        for (let i = 0; i < maxLen; i++) {
+            ordemTonalidades.forEach(ton => {
+                if (grupos[ton] && i < grupos[ton].length) {
+                    resultado.push(grupos[ton][i]);
+                }
+            });
+        }
+        return resultado;
+    }
+
+    // ============================================================
+    //  FUNÇÃO PARA CARREGAR TONALIDADES SELECIONADAS
+    // ============================================================
+    function carregarTonalidadesSelecionadas() {
+        const selectedOptions = tonalidadeSelect.selectedOptions;
+        const selecionadas = Array.from(selectedOptions).map(opt => opt.value);
+        // Verifica se "todas" está entre as selecionadas
+        const temTodas = selecionadas.includes('todas');
+        let tonalidadesFiltro;
+        if (temTodas) {
+            // Se "Todas" está selecionado, considera todas as tonalidades disponíveis
+            tonalidadesFiltro = [...new Set(CONJUNTOS_TODOS.map(c => c.tonalidade))];
+            // Marca todas as outras opções (opcional, para UI)
+            Array.from(tonalidadeSelect.options).forEach(opt => {
+                if (opt.value !== 'todas') opt.selected = true;
+            });
+        } else {
+            tonalidadesFiltro = selecionadas;
+            // Se nenhuma tonalidade selecionada, usa 'do' como fallback
+            if (tonalidadesFiltro.length === 0) {
+                tonalidadesFiltro = ['do'];
+                // Marca 'do' no select
+                Array.from(tonalidadeSelect.options).forEach(opt => {
+                    if (opt.value === 'do') opt.selected = true;
+                });
+            }
+        }
+        // Filtrar conjuntos
+        let filtrados = CONJUNTOS_TODOS.filter(c => tonalidadesFiltro.includes(c.tonalidade));
+        // Se "Todas" estiver ativo, reordenar intercalado
+        if (temTodas) {
+            filtrados = reordenarIntercalado(filtrados);
+        }
+        CONJUNTOS_FILTRADOS = filtrados;
+        TOTAL_CONJUNTOS = CONJUNTOS_FILTRADOS.length;
+        conjuntoIndex = 0;
+        acertos = 0;
+        erros = 0;
+        jogoTerminado = false;
+        perguntaConcluida = false;
+        aguardandoResposta = false;
+        estaTocando = false;
+        notaEsperada = null;
+        notaEsperadaObj = null;
+        timeoutIds.forEach(id => clearTimeout(id));
+        timeoutIds = [];
+        notaDestaque = -1;
+
+        desenharPartitura(-1);
+        atualizarInterface();
+        feedbackMsg.textContent = '';
+        feedbackMsg.className = 'feedback';
+        btnPlay.disabled = false;
+        btnRepeat.disabled = true;
+        document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+        console.log(`🔄 Tonalidades selecionadas: ${tonalidadesFiltro.join(', ')} (${TOTAL_CONJUNTOS} exercícios)`);
+    }
+
+    // ============================================================
+    //  ÁUDIO – PIANO
+    // ============================================================
+    function tocarNota(notaLetra, duracao = 0.6, volume = 1.0) {
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGainNode = audioCtx.createGain();
+                masterGainNode.gain.value = 1.0;
+                masterGainNode.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+            if (!conjuntoAtual) return;
+            const nota = conjuntoAtual.notas.find(n => n.letra === notaLetra);
+            if (!nota) return;
+
+            const freq = nota.freq;
+            const time = audioCtx.currentTime;
+
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'square';
+            osc1.frequency.setValueAtTime(freq, time);
+            gain1.gain.setValueAtTime(0, time);
+            gain1.gain.linearRampToValueAtTime(volume * 0.8, time + 0.01);
+            gain1.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.6);
+
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+            osc2.type = 'square';
+            osc2.frequency.setValueAtTime(freq * 2, time);
+            gain2.gain.setValueAtTime(0, time);
+            gain2.gain.linearRampToValueAtTime(volume * 0.25, time + 0.01);
+            gain2.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.5);
+
+            osc1.connect(gain1);
+            gain1.connect(masterGainNode);
+            osc2.connect(gain2);
+            gain2.connect(masterGainNode);
+
+            osc1.start(time);
+            osc1.stop(time + duracao);
+            osc2.start(time);
+            osc2.stop(time + duracao);
+
+            return true;
+        } catch (e) {
+            console.error('Erro ao tocar nota:', e);
+            return false;
+        }
+    }
+
+    // ============================================================
+    //  PARTITURA – com armadura via nome em inglês
+    // ============================================================
+    function desenharPartitura(destaqueIndex = -1) {
+        notationEl.innerHTML = '';
+        if (!CONJUNTOS_FILTRADOS.length) return;
+        try {
+            if (typeof Vex === 'undefined') {
+                throw new Error('VexFlow não carregado.');
+            }
+            const VF = Vex.Flow;
+            const width = Math.min(notationEl.clientWidth || 850, 900);
+            const height = 110;
+            const renderer = new VF.Renderer(notationEl, VF.Renderer.Backends.SVG);
+            renderer.resize(width, height);
+            const ctx = renderer.getContext();
+
+            const stave = new VF.Stave(50, 0, width - 100);
+            stave.addClef('treble');
+            stave.addTimeSignature('4/4');
+
+            const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+            if (conjuntoAtual) {
+                const ton = conjuntoAtual.tonalidade;
+                const tonalidadeIngles = {
+                    'do': 'C', 're': 'D', 'mi': 'E', 'fa': 'F', 'sol': 'G', 'la': 'A', 'si': 'B',
+                    'do#': 'C#', 're#': 'D#', 'fa#': 'F#', 'sol#': 'G#', 'la#': 'A#', 'si#': 'B#',
+                    'sib': 'Bb', 'mib': 'Eb', 'lab': 'Ab', 'reb': 'Db', 'solb': 'Gb', 'dob': 'Cb'
+                };
+                const armaduraStr = tonalidadeIngles[ton] || '';
+                if (armaduraStr) {
+                    stave.setKeySignature(armaduraStr);
+                }
+            }
+
+            stave.setContext(ctx);
+            stave.draw();
+
+            if (!conjuntoAtual) return;
+            const notasAtuais = conjuntoAtual.notas;
+            const notasVex = notasAtuais.map(n =>
+                new VF.StaveNote({ keys: [n.key], duration: 'w', auto_stem: false })
+            );
+
+            const totalBeats = notasAtuais.length * 4;
+            const voice = new VF.Voice({ num_beats: totalBeats, beat_value: 4, resolution: VF.RESOLUTION });
+            voice.addTickables(notasVex);
+            new VF.Formatter().joinVoices([voice]).format([voice], width - 140);
+            voice.draw(ctx, stave);
+
+            if (destaqueIndex >= 0 && destaqueIndex < notasAtuais.length) {
+                const svg = notationEl.querySelector('svg');
+                if (svg) {
+                    const notaWidth = (width - 140) / notasAtuais.length;
+                    const x = 70 + (destaqueIndex * notaWidth) + notaWidth / 2;
+                    const y = 30;
+
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                    filter.setAttribute('id', 'glow');
+                    filter.setAttribute('x', '-50%');
+                    filter.setAttribute('y', '-50%');
+                    filter.setAttribute('width', '200%');
+                    filter.setAttribute('height', '200%');
+                    const blur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+                    blur.setAttribute('stdDeviation', '3');
+                    blur.setAttribute('result', 'blur');
+                    const merge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+                    const m1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    m1.setAttribute('in', 'blur');
+                    const m2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    m2.setAttribute('in', 'SourceGraphic');
+                    merge.appendChild(m1);
+                    merge.appendChild(m2);
+                    filter.appendChild(blur);
+                    filter.appendChild(merge);
+                    defs.appendChild(filter);
+                    svg.insertBefore(defs, svg.firstChild);
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y - 5);
+                    circle.setAttribute('r', '12');
+                    circle.setAttribute('fill', notasAtuais[destaqueIndex].cor);
+                    circle.setAttribute('opacity', '0.85');
+                    circle.setAttribute('stroke', 'white');
+                    circle.setAttribute('stroke-width', '3');
+                    circle.setAttribute('filter', 'url(#glow)');
+                    svg.appendChild(circle);
+                }
+            }
+
+            ctx.save();
+            ctx.setStrokeStyle('#333');
+            ctx.setLineWidth(3);
+            ctx.beginPath();
+            ctx.moveTo(width - 60, stave.getYForLine(4) - 5);
+            ctx.lineTo(width - 60, stave.getYForLine(0) + 5);
+            ctx.stroke();
+            ctx.restore();
+
+        } catch (e) {
+            console.error('Erro ao desenhar partitura:', e);
+            const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+            const nomes = conjuntoAtual ? conjuntoAtual.notas.map(n => n.nome).join(' ') : '';
+            notationEl.innerHTML = `<div style="text-align:center;padding:20px;color:#666;"><p>🎵 ${nomes}</p></div>`;
+        }
+    }
+
+    // ============================================================
+    //  INTERFACE E LÓGICA (restante inalterado)
+    // ============================================================
+    function atualizarInterface() {
+        if (!CONJUNTOS_FILTRADOS.length) {
+            conjuntoLabel.textContent = 'Nenhum exercício';
+            etapaLabel.textContent = '0 / 0';
+            return;
+        }
+        const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+        conjuntoLabel.textContent = conjuntoAtual ? conjuntoAtual.nome : '';
+        etapaLabel.textContent = `${conjuntoIndex + 1} / ${TOTAL_CONJUNTOS}`;
+        acertosLabel.textContent = acertos;
+        errosLabel.textContent = erros;
+
+        legendaEl.innerHTML = '';
+        if (conjuntoAtual) {
+            conjuntoAtual.notas.forEach(nota => {
+                const btn = document.createElement('button');
+                btn.className = 'nota-btn';
+                btn.dataset.nota = nota.letra;
+                btn.innerHTML = `<span class="bola" style="background:${nota.cor};"></span> ${nota.nome}`;
+                btn.disabled = true;
+                btn.addEventListener('click', function() {
+                    if (aguardandoResposta && !jogoTerminado && !perguntaConcluida) {
+                        verificarResposta(this.dataset.nota);
+                    }
+                });
+                legendaEl.appendChild(btn);
+            });
+        }
+
+        desabilitarBotoes(true);
+        btnPlay.disabled = (jogoTerminado || !CONJUNTOS_FILTRADOS.length);
+        btnRepeat.disabled = true;
+        if (aguardandoResposta) {
+            desabilitarBotoes(false);
+            btnRepeat.disabled = false;
+        }
+    }
+
+    function desabilitarBotoes(desabilitar) {
+        document.querySelectorAll('.nota-btn').forEach(b => b.disabled = desabilitar);
+    }
+
+    function construirSequencia() {
+        const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+        if (!conjuntoAtual) return [];
+        const letras = conjuntoAtual.notas.map(n => n.letra);
+        const dividir = dividirCheckbox.checked;
+        let sequencia = [];
+
+        if (dividir) {
+            const repeticoes = 3;
+            for (let i = 0; i < letras.length; i++) {
+                for (let r = 0; r < repeticoes; r++) {
+                    sequencia.push(letras[i]);
+                }
+            }
+            for (let i = letras.length - 2; i >= 0; i--) {
+                for (let r = 0; r < repeticoes; r++) {
+                    sequencia.push(letras[i]);
+                }
+            }
+        } else {
+            for (let i = 0; i < letras.length; i++) {
+                sequencia.push(letras[i]);
+            }
+            for (let i = letras.length - 2; i >= 0; i--) {
+                sequencia.push(letras[i]);
+            }
+        }
+        return sequencia;
+    }
+
+    function tocarEscala() {
+        if (estaTocando) return;
+        if (jogoTerminado || !CONJUNTOS_FILTRADOS.length) return;
+
+        if (timeoutsPergunta) {
+            timeoutsPergunta.forEach(id => clearTimeout(id));
+            timeoutsPergunta = [];
+        }
+        if (timeoutIds) {
+            timeoutIds.forEach(id => clearTimeout(id));
+            timeoutIds = [];
+        }
+
+        aguardandoResposta = false;
+        perguntaConcluida = false;
+        notaEsperada = null;
+        notaEsperadaObj = null;
+        feedbackMsg.textContent = '';
+        feedbackMsg.className = 'feedback';
+        document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+
+        estaTocando = true;
+        btnPlay.disabled = true;
+        btnRepeat.disabled = true;
+        desabilitarBotoes(true);
+
+        const speedFactor = parseFloat(speedSlider.value) / 100;
+        const duracaoBase = 0.4;
+        const intervaloBase = 0.15;
+        const duracaoNota = duracaoBase / speedFactor;
+        const intervalo = intervaloBase / speedFactor;
+
+        const sequencia = construirSequencia();
+        const seqEventos = [];
+        sequencia.forEach((letra, idx) => {
+            seqEventos.push({ letra: letra, duracao: duracaoNota });
+        });
+
+        let tempoCorrente = 0;
+        seqEventos.forEach((item, index) => {
+            const delay = tempoCorrente;
+            const id = setTimeout(() => {
+                if (item.letra) {
+                    tocarNota(item.letra, item.duracao, 1.0);
+                    const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+                    const idxNota = conjuntoAtual ? conjuntoAtual.notas.findIndex(n => n.letra === item.letra) : -1;
+                    notaDestaque = (idxNota !== -1) ? idxNota : -1;
+                    desenharPartitura(notaDestaque);
+                }
+                if (index === seqEventos.length - 1) {
+                    setTimeout(() => {
+                        setTimeout(() => iniciarPergunta(), 300);
+                    }, item.duracao * 1000 + 50);
+                }
+            }, delay * 1000);
+            timeoutIds.push(id);
+
+            tempoCorrente += item.duracao + intervalo;
+        });
+    }
+
+    function iniciarPergunta() {
+        if (jogoTerminado || perguntaConcluida || !CONJUNTOS_FILTRADOS.length) return;
+        const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+        if (!conjuntoAtual) return;
+        const notas = conjuntoAtual.notas;
+        if (!notas.length) return;
+        const indice = Math.floor(Math.random() * notas.length);
+        notaEsperada = notas[indice].letra;
+        notaEsperadaObj = notas[indice];
+
+        if (timeoutsPergunta) {
+            timeoutsPergunta.forEach(id => clearTimeout(id));
+            timeoutsPergunta = [];
+        }
+
+        notaDestaque = -1;
+        desenharPartitura(notaDestaque);
+
+        feedbackMsg.textContent = '🔊';
+        feedbackMsg.className = 'feedback icone';
+
+        const speedFactor = parseFloat(speedSlider.value) / 100;
+        const duracaoBase = 0.6;
+        const duracaoNota = duracaoBase / speedFactor;
+
+        const id1 = setTimeout(() => {
+            tocarNota(notaEsperada, duracaoNota, 1.0);
+        }, 300);
+        timeoutsPergunta.push(id1);
+
+        const id2 = setTimeout(() => {
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = 'feedback';
+            const id3 = setTimeout(() => {
+                aguardandoResposta = true;
+                desabilitarBotoes(false);
+                btnPlay.disabled = false;
+                btnRepeat.disabled = false;
+                document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('destaque'));
+                estaTocando = false;
+            }, 200);
+            timeoutsPergunta.push(id3);
+        }, 300 + (duracaoNota * 1000) + 200);
+        timeoutsPergunta.push(id2);
+    }
+
+    function repetirNota() {
+        if (!aguardandoResposta || !notaEsperada || jogoTerminado || perguntaConcluida) return;
+        
+        if (timeoutsPergunta) {
+            timeoutsPergunta.forEach(id => clearTimeout(id));
+            timeoutsPergunta = [];
+        }
+
+        notaDestaque = -1;
+        desenharPartitura(notaDestaque);
+
+        feedbackMsg.textContent = '🔊';
+        feedbackMsg.className = 'feedback icone';
+
+        const speedFactor = parseFloat(speedSlider.value) / 100;
+        const duracaoBase = 0.6;
+        const duracaoNota = duracaoBase / speedFactor;
+
+        const id1 = setTimeout(() => {
+            tocarNota(notaEsperada, duracaoNota, 1.0);
+        }, 300);
+        timeoutsPergunta.push(id1);
+
+        const id2 = setTimeout(() => {
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = 'feedback';
+            const id3 = setTimeout(() => {
+                aguardandoResposta = true;
+                desabilitarBotoes(false);
+                btnPlay.disabled = false;
+                btnRepeat.disabled = false;
+                document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('destaque'));
+            }, 200);
+            timeoutsPergunta.push(id3);
+        }, 300 + (duracaoNota * 1000) + 200);
+        timeoutsPergunta.push(id2);
+    }
+
+    function reiniciarPergunta() {
+        if (jogoTerminado || !CONJUNTOS_FILTRADOS.length) return;
+        if (timeoutsPergunta) {
+            timeoutsPergunta.forEach(id => clearTimeout(id));
+            timeoutsPergunta = [];
+        }
+        if (timeoutIds) {
+            timeoutIds.forEach(id => clearTimeout(id));
+            timeoutIds = [];
+        }
+        aguardandoResposta = false;
+        perguntaConcluida = false;
+        notaEsperada = null;
+        notaEsperadaObj = null;
+        estaTocando = false;
+        document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+        feedbackMsg.textContent = '';
+        feedbackMsg.className = 'feedback';
+        desabilitarBotoes(true);
+        btnPlay.disabled = false;
+        btnRepeat.disabled = true;
+
+        const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+        if (!conjuntoAtual) return;
+        const notas = conjuntoAtual.notas;
+        if (!notas.length) return;
+        const indice = Math.floor(Math.random() * notas.length);
+        notaEsperada = notas[indice].letra;
+        notaEsperadaObj = notas[indice];
+
+        feedbackMsg.textContent = '🔊';
+        feedbackMsg.className = 'feedback icone';
+        const speedFactor = parseFloat(speedSlider.value) / 100;
+        const duracaoBase = 0.6;
+        const duracaoNota = duracaoBase / speedFactor;
+
+        const id1 = setTimeout(() => {
+            tocarNota(notaEsperada, duracaoNota, 1.0);
+        }, 300);
+        timeoutsPergunta.push(id1);
+
+        const id2 = setTimeout(() => {
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = 'feedback';
+            const id3 = setTimeout(() => {
+                aguardandoResposta = true;
+                desabilitarBotoes(false);
+                btnPlay.disabled = false;
+                btnRepeat.disabled = false;
+                document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('destaque'));
+                estaTocando = false;
+            }, 200);
+            timeoutsPergunta.push(id3);
+        }, 300 + (duracaoNota * 1000) + 200);
+        timeoutsPergunta.push(id2);
+    }
+
+    function verificarResposta(letraClicada) {
+        if (!aguardandoResposta || jogoTerminado || perguntaConcluida) return;
+        aguardandoResposta = false;
+        desabilitarBotoes(true);
+        btnRepeat.disabled = true;
+        
+        if (timeoutsPergunta) {
+            timeoutsPergunta.forEach(id => clearTimeout(id));
+            timeoutsPergunta = [];
+        }
+
+        const acertou = (letraClicada === notaEsperada);
+        document.querySelectorAll('.nota-btn').forEach(btn => {
+            btn.classList.remove('destaque', 'acertou', 'errou');
+            if (btn.dataset.nota === letraClicada) {
+                btn.classList.add(acertou ? 'acertou' : 'errou');
+            }
+            if (btn.dataset.nota === notaEsperada && !acertou) {
+                btn.classList.add('destaque');
+                setTimeout(() => btn.classList.remove('destaque'), 1000);
+            }
+        });
+
+        if (acertou) {
+            acertos++;
+            perguntaConcluida = true;
+            feedbackMsg.textContent = `🎉 Parabéns! Você acertou: ${notaEsperadaObj.nome}!`;
+            feedbackMsg.className = 'feedback sucesso';
+            setTimeout(() => avançarEtapa(), 1500);
+        } else {
+            erros++;
+            feedbackMsg.textContent = `😢 Que pena! Você errou. A nota era ${notaEsperadaObj.nome}. Tente novamente!`;
+            feedbackMsg.className = 'feedback erro';
+            setTimeout(() => {
+                feedbackMsg.textContent = '';
+                feedbackMsg.className = 'feedback';
+                reiniciarPergunta();
+            }, 1500);
+        }
+        atualizarInterface();
+    }
+
+    function avançarEtapa() {
+        if (jogoTerminado) return;
+        conjuntoIndex++;
+        if (conjuntoIndex >= TOTAL_CONJUNTOS) {
+            jogoTerminado = true;
+            btnPlay.disabled = true;
+            btnRepeat.disabled = true;
+            desabilitarBotoes(true);
+            feedbackMsg.textContent = `🏁 Fim! Acertos: ${acertos}, Erros: ${erros}`;
+            feedbackMsg.className = 'feedback fim';
+            return;
+        }
+        perguntaConcluida = false;
+        aguardandoResposta = false;
+        estaTocando = false;
+        notaEsperada = null;
+        notaEsperadaObj = null;
+        btnPlay.disabled = false;
+        btnRepeat.disabled = true;
+        desabilitarBotoes(true);
+        document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+        feedbackMsg.textContent = '';
+        feedbackMsg.className = 'feedback';
+        desenharPartitura(-1);
+        atualizarInterface();
+    }
+
+    // ============================================================
+    //  CONTROLES E INICIALIZAÇÃO
+    // ============================================================
+    speedSlider.addEventListener('input', function() {
+        const val = parseFloat(this.value) / 100;
+        speedValue.textContent = val.toFixed(1) + 'x';
+    });
+
+    btnPlay.addEventListener('click', () => {
+        if (aguardandoResposta && !jogoTerminado && !perguntaConcluida) {
+            if (timeoutsPergunta) {
+                timeoutsPergunta.forEach(id => clearTimeout(id));
+                timeoutsPergunta = [];
+            }
+            aguardandoResposta = false;
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = 'feedback';
+            document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+        }
+        if (estaTocando || jogoTerminado || perguntaConcluida || !CONJUNTOS_FILTRADOS.length) return;
+        tocarEscala();
+    });
+
+    btnRepeat.addEventListener('click', repetirNota);
+
+    function popularSelect() {
+        // Ordem definida pelo usuário
+        const ordem = ['do', 'fa', 'sol', 'sib', 're', 'mib', 'la', 'lab', 'mi', 'reb'];
+        // Mapear nome para exibição
+        const nomeExib = {
+            'do': 'Dó', 'fa': 'Fá', 'sol': 'Sol', 'sib': 'Si♭', 're': 'Ré',
+            'mib': 'Mi♭', 'la': 'Lá', 'lab': 'Lá♭', 'mi': 'Mi', 'reb': 'Ré♭'
+        };
+        // Obter todas as tonalidades disponíveis
+        const disponiveis = new Set(CONJUNTOS_TODOS.map(c => c.tonalidade));
+        // Filtrar apenas as que existem, mantendo a ordem
+        const tons = ordem.filter(t => disponiveis.has(t));
+        tonalidadeSelect.innerHTML = '';
+        // Adicionar opção "Todas" no início
+        const optTodas = document.createElement('option');
+        optTodas.value = 'todas';
+        optTodas.textContent = 'Todas';
+        optTodas.selected = true; // padrão
+        tonalidadeSelect.appendChild(optTodas);
+
+        tons.forEach(ton => {
+            const option = document.createElement('option');
+            option.value = ton;
+            option.textContent = nomeExib[ton] || ton.charAt(0).toUpperCase() + ton.slice(1);
+            // Não selecionar por padrão, apenas "Todas" estará selecionado
+            tonalidadeSelect.appendChild(option);
+        });
+        tonalidadeSelect.addEventListener('change', carregarTonalidadesSelecionadas);
+        // Para garantir que "Todas" esteja selecionado e as outras também (para UI)
+        // Mas a lógica de carregarTonalidadesSelecionadas tratará "todas"
+        // Vamos forçar a seleção de todas as opções quando "todas" está marcado
+        tonalidadeSelect.addEventListener('change', function() {
+            const selected = Array.from(this.selectedOptions).map(o => o.value);
+            if (selected.includes('todas')) {
+                // Marca todas as outras opções
+                Array.from(this.options).forEach(opt => {
+                    if (opt.value !== 'todas') opt.selected = true;
+                });
+            }
+        });
+    }
+
+    function init() {
+        if (typeof Vex === 'undefined') {
+            setTimeout(init, 300);
+            return;
+        }
+        CONJUNTOS_TODOS = processarLista();
+        console.log(`✅ ${CONJUNTOS_TODOS.length} exercícios carregados.`);
+        popularSelect();
+        carregarTonalidadesSelecionadas();
+        speedValue.textContent = (parseFloat(speedSlider.value) / 100).toFixed(1) + 'x';
+        console.log('✅ Sistema pronto com select em linha, opção "Todas" e ordenação intercalada.');
+    }
+
+    if (document.readyState === 'complete') {
+        setTimeout(init, 400);
+    } else {
+        window.addEventListener('load', () => setTimeout(init, 400));
+    }
+
+    overlay.addEventListener('click', () => overlay.classList.remove('show'));
+    setTimeout(() => overlay.classList.remove('show'), 5000);
+
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            if (!estaTocando && !aguardandoResposta) {
+                desenharPartitura(notaDestaque);
+            }
+        }, 300);
+    });
+</script>
+</body>
+</html>
