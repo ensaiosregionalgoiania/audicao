@@ -328,7 +328,7 @@
     <!-- Botão Fechar -->
     <button class="btn-fechar" id="btnFechar">✕ Fechar</button>
 
-    <h1>🎵 <span>Audição2</span></h1>
+    <h1>🎵 <span>Audição</span></h1>
 
     <!-- Controles -->
     <div class="controls-row">
@@ -1814,7 +1814,7 @@
     });
 
     function enviarResultado() {
-        if (acertos >= 0) {
+        if (acertos >= 10) {
             const total = acertos + erros;
             const tonalidadesSelecionadas = Array.from(tonalidadeSelect.selectedOptions)
                 .map(o => o.value)
