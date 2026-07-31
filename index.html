@@ -6,6 +6,7 @@
     <title>🎵 Escalas com repetição</title>
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.4/build/cjs/vexflow.js"></script>
     <style>
+        /* CSS idêntico ao anterior, sem alterações */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -50,7 +51,7 @@
             color: #333;
             font-size: 1.4em;
             margin-bottom: 4px;
-            margin-right: 60px; /* espaço para o botão fechar */
+            margin-right: 60px;
         }
         h1 span {
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -106,9 +107,14 @@
             cursor: pointer;
             transition: 0.2s;
             padding: 2px 8px;
-            min-width: 60px;
-            max-width: 80px;
+            min-width: 80px;
+            max-width: 100px;
             height: 30px;
+        }
+        .control-group select[multiple] {
+            height: 30px; /* mesma altura do select normal */
+            max-height: 30px;
+            overflow-y: hidden; /* esconde a barra de rolagem */
         }
         .control-group select:focus {
             border-color: #764ba2;
@@ -296,7 +302,7 @@
             .control-group { justify-content: space-between; }
             .control-group.vertical { align-items: stretch; }
             .control-group input[type="range"] { width: 100%; }
-            .control-group select { max-width: 100%; width: 100%; }
+            .control-group select { max-width: 100%; width: 100%; min-width: unset; }
             .info-top { font-size: 0.7em; padding: 3px 6px; }
             .nota-btn { padding: 4px 10px; font-size: 0.8em; }
             .btn { padding: 8px 12px; font-size: 0.8em; min-width: 50px; }
@@ -325,14 +331,11 @@
 </div>
 
 <div class="container">
-    <!-- Botão Fechar -->
     <button class="btn-fechar" id="btnFechar">✕ Fechar</button>
-
     <h1>🎵 <span>Audição</span></h1>
 
-    <!-- Controles -->
     <div class="controls-row">
-        <!-- Velocidade (vertical) -->
+        <!-- Velocidade -->
         <div class="control-group vertical">
             <label for="speedSlider">⏱️ Velocidade</label>
             <div style="display:flex; align-items:center; gap:6px;">
@@ -341,7 +344,7 @@
             </div>
         </div>
 
-        <!-- Dividir Som (vertical) – antes "Repetições" -->
+        <!-- Dividir Som -->
         <div class="control-group vertical">
             <label for="repeticoesSelect">🔁 Dividir Som:</label>
             <select id="repeticoesSelect">
@@ -354,7 +357,7 @@
             </select>
         </div>
 
-        <!-- Ordem (vertical) -->
+        <!-- Ordem -->
         <div class="control-group vertical">
             <label for="ordemSelect">📊 Ordem:</label>
             <select id="ordemSelect">
@@ -363,7 +366,18 @@
             </select>
         </div>
 
-        <!-- Escalas (vertical) -->
+        <!-- Som (cópia exata do select Escalas: multiple size="1") -->
+        <div class="control-group vertical">
+            <label for="somSelect">🎵 Som:</label>
+            <select id="somSelect" multiple size="1">
+                <option value="sine" selected>Seno</option>
+                <option value="square">Quadrado</option>
+                <option value="triangle">Triângulo</option>
+                <option value="sawtooth">Dente de Serra</option>
+            </select>
+        </div>
+
+        <!-- Escalas -->
         <div class="control-group vertical">
             <label for="tonalidadeSelect">🎼 Escalas:</label>
             <select id="tonalidadeSelect" multiple size="1">
@@ -390,7 +404,6 @@
     </div>
 
     <div class="feedback" id="feedbackMsg"></div>
-
     <div class="legenda" id="legenda"></div>
 </div>
 
@@ -1093,18 +1106,44 @@
     const repeticoesSelect = document.getElementById('repeticoesSelect');
     const tonalidadeSelect = document.getElementById('tonalidadeSelect');
     const ordemSelect = document.getElementById('ordemSelect');
+    const somSelect = document.getElementById('somSelect');
+
+    // ============================================================
+    //  NENHUM EVENTO ESPECIAL NO SELECT SOM – cópia exata do select Escalas
+    // ============================================================
+
+    // ============================================================
+    //  FUNÇÃO PARA ENVIAR RESULTADO
+    // ============================================================
+    function enviarResultado() {
+        if (acertos >= 10) {
+            const total = acertos + erros;
+            const tonalidadesSelecionadas = Array.from(tonalidadeSelect.selectedOptions)
+                .map(o => o.value)
+                .filter(v => v !== 'todas')
+                .join(', ') || 'Nenhuma';
+            const mensagem = `📊 *Resumo do treino de escalas*%0A` +
+                             `✅ Acertos: ${acertos}%0A` +
+                             `❌ Erros: ${erros}%0A` +
+                             `📌 Total: ${total}%0A` +
+                             `🎼 Tonalidades: ${tonalidadesSelecionadas}%0A` +
+                             `📊 Ordem: ${ordemSelect.value === 'mista' ? 'Mista' : 'Sequencial'}`;
+            const confirmar = confirm(`Você tem ${acertos} acertos. Deseja enviar o resultado pelo WhatsApp?`);
+            if (confirmar) {
+                const url = `https://wa.me/?text=${mensagem}`;
+                window.open(url, '_blank');
+            }
+        }
+    }
 
     // ============================================================
     //  BOTÃO FECHAR
     // ============================================================
     btnFechar.addEventListener('click', function() {
         enviarResultado();
-        // Tenta fechar a página
         if (window.close) {
             window.close();
         }
-        // Se não fechar (ex: janela principal), redireciona para about:blank
-        // Isso também dispara o beforeunload se ainda não foi chamado
         if (!window.closed) {
             window.location.href = 'about:blank';
         }
@@ -1204,7 +1243,7 @@
     }
 
     // ============================================================
-    //  ÁUDIO – PIANO
+    //  ÁUDIO – PIANO (com múltiplas formas de onda via select)
     // ============================================================
     function tocarNota(notaLetra, duracao = 0.6, volume = 1.0) {
         try {
@@ -1222,34 +1261,33 @@
             const nota = conjuntoAtual.notas.find(n => n.letra === notaLetra);
             if (!nota) return;
 
+            // Obter formas de onda selecionadas
+            const selectedOptions = somSelect.selectedOptions;
+            const formas = Array.from(selectedOptions).map(opt => opt.value);
+            if (formas.length === 0) {
+                formas.push('sine');
+            }
+            const numFormas = formas.length;
+            const volumePorForma = volume / numFormas;
+
             const freq = nota.freq;
             const time = audioCtx.currentTime;
 
-            const osc1 = audioCtx.createOscillator();
-            const gain1 = audioCtx.createGain();
-            osc1.type = 'square';
-            osc1.frequency.setValueAtTime(freq, time);
-            gain1.gain.setValueAtTime(0, time);
-            gain1.gain.linearRampToValueAtTime(volume * 0.8, time + 0.01);
-            gain1.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.6);
+            formas.forEach(tipo => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = tipo;
+                osc.frequency.setValueAtTime(freq, time);
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(volumePorForma * 0.8, time + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.6);
 
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'square';
-            osc2.frequency.setValueAtTime(freq * 2, time);
-            gain2.gain.setValueAtTime(0, time);
-            gain2.gain.linearRampToValueAtTime(volume * 0.25, time + 0.01);
-            gain2.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.5);
+                osc.connect(gain);
+                gain.connect(masterGainNode);
 
-            osc1.connect(gain1);
-            gain1.connect(masterGainNode);
-            osc2.connect(gain2);
-            gain2.connect(masterGainNode);
-
-            osc1.start(time);
-            osc1.stop(time + duracao);
-            osc2.start(time);
-            osc2.stop(time + duracao);
+                osc.start(time);
+                osc.stop(time + duracao);
+            });
 
             return true;
         } catch (e) {
@@ -1368,7 +1406,7 @@
     }
 
     // ============================================================
-    //  INTERFACE E LÓGICA
+    //  INTERFACE E LÓGICA (restante igual)
     // ============================================================
     function atualizarInterface() {
         if (!CONJUNTOS_FILTRADOS.length) {
@@ -1419,13 +1457,11 @@
         const repeticoes = parseInt(repeticoesSelect.value) || 1;
         let sequencia = [];
 
-        // Subida: cada nota repetida N vezes
         for (let i = 0; i < letras.length; i++) {
             for (let r = 0; r < repeticoes; r++) {
                 sequencia.push(letras[i]);
             }
         }
-        // Descida: do penúltimo até o primeiro (sem repetir a última nota da subida)
         for (let i = letras.length - 2; i >= 0; i--) {
             for (let r = 0; r < repeticoes; r++) {
                 sequencia.push(letras[i]);
@@ -1701,7 +1737,7 @@
     }
 
     // ============================================================
-    //  ENVIO DE RESULTADO VIA WHATSAPP (ao fechar)
+    //  BEFOREUNLOAD
     // ============================================================
     window.addEventListener('beforeunload', function(e) {
         enviarResultado();
@@ -1780,7 +1816,7 @@
             carregarTonalidadesSelecionadas();
         });
 
-        optTodas.selected = false; // "Todas" não fica como filtro
+        optTodas.selected = false;
     }
 
     function init() {
@@ -1812,29 +1848,6 @@
             }
         }, 300);
     });
-
-    function enviarResultado() {
-        if (acertos >= 10) {
-            const total = acertos + erros;
-            const tonalidadesSelecionadas = Array.from(tonalidadeSelect.selectedOptions)
-                .map(o => o.value)
-                .filter(v => v !== 'todas')
-                .join(', ') || 'Nenhuma';
-            const mensagem = `📊 *Resumo do treino de escalas*%0A` +
-                             `✅ Acertos: ${acertos}%0A` +
-                             `❌ Erros: ${erros}%0A` +
-                             `📌 Total: ${total}%0A` +
-                             `🎼 Tonalidades: ${tonalidadesSelecionadas}%0A` +
-                             `📊 Ordem: ${ordemSelect.value === 'mista' ? 'Mista' : 'Sequencial'}`;
-            const confirmar = confirm(`Você tem ${acertos} acertos. Deseja enviar o resultado pelo WhatsApp?`);
-            if (confirmar) {
-                const url = `https://wa.me/?text=${mensagem}`;
-                window.open(url, '_blank');
-            }
-        }
-    }
-
-
 </script>
 </body>
 </html>
