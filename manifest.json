@@ -1,0 +1,21 @@
+{
+  "name": "🎵 Audição - Escalas com repetição",
+  "short_name": "Audição",
+  "description": "Treino de identificação de notas em escalas",
+  "start_url": "/audicao/",
+  "display": "standalone",
+  "theme_color": "#667eea",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
