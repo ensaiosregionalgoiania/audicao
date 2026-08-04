@@ -1155,14 +1155,13 @@
         if (!nota) return;
 
         const oitava = nota.oitava || 4;
-        const nomeArquivo = notaParaNomeArquivo(nota.letra, oitava);
+        const nomeArquivo = notaParaNomeArquivo(nota.letra, oitava-1);
         const url = `mp3/${nomeArquivo}`; // ajuste o caminho se necessário
 
         if (audioCache.has(url)) {
             tocarBuffer(audioCache.get(url), volume, duracao);
             return;
         }
-
         fetch(url)
             .then(res => {
                 if (!res.ok) throw new Error(`HTTP ${res.status} - ${url}`);
