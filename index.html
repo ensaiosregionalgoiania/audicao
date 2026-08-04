@@ -7,7 +7,7 @@
     <title>🎵 Escalas com repetição</title>
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.4/build/cjs/vexflow.js"></script>
     <style>
-        /* CSS idêntico ao anterior, sem alterações */
+        /* CSS idêntico ao original – sem alterações */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -113,9 +113,9 @@
             height: 30px;
         }
         .control-group select[multiple] {
-            height: 30px; /* mesma altura do select normal */
+            height: 30px;
             max-height: 30px;
-            overflow-y: hidden; /* esconde a barra de rolagem */
+            overflow-y: hidden;
         }
         .control-group select:focus {
             border-color: #764ba2;
@@ -367,8 +367,8 @@
             </select>
         </div>
 
-        <!-- Som (cópia exata do select Escalas: multiple size="1") -->
-        <div class="control-group vertical">
+        <!-- Som – agora oculto porque usamos MP3 fixo (piano) -->
+        <div class="control-group vertical" style="display:none;">
             <label for="somSelect">🎵 Som:</label>
             <select id="somSelect" multiple size="1">
                 <option value="sine" selected>Seno</option>
@@ -1013,6 +1013,7 @@
         'B': '#a54b6b'
     };
 
+    // FREQ_BASE não é mais usada para tocar, mas mantida para referência
     const FREQ_BASE = {
         'C': 261.63, 'C#': 277.18, 'Db': 277.18,
         'D': 293.66, 'D#': 311.13, 'Eb': 311.13,
@@ -1052,7 +1053,8 @@
             nome: nomeExib,
             cor: cor,
             freq: freq,
-            letra: letra
+            letra: letra,
+            oitava: oitava
         };
     }
 
@@ -1089,6 +1091,92 @@
     }
 
     // ============================================================
+    //  NOVO: MAPEAMENTO PARA ARQUIVOS MP3
+    // ============================================================
+    // Converte letra + oitava para o nome do arquivo no formato pianoff{nota}{oitava}.mp3
+    // Sustenidos são mapeados para bemóis equivalentes
+    function notaParaNomeArquivo(letra, oitava) {
+        let nome = letra.toLowerCase();
+        // Mapeamento de sustenidos para bemóis
+        const sustenidos = {
+            'c#': 'db',
+            'd#': 'eb',
+            'f#': 'gb',
+            'g#': 'ab',
+            'a#': 'bb'
+        };
+        if (nome.endsWith('#')) {
+            nome = sustenidos[nome] || nome;
+        }
+        // Casos especiais: E# -> F, B# -> C
+        if (nome === 'e#') nome = 'f';
+        if (nome === 'b#') nome = 'c';
+        return `pianoff${nome}${oitava}.mp3`;
+    }
+
+    // ============================================================
+    //  ÁUDIO COM MP3 (substituindo osciladores)
+    // ============================================================
+    let audioCtx = null;
+    let masterGainNode = null;
+    const audioCache = new Map(); // cache de buffers
+
+    function tocarBuffer(buffer, volume, duracao) {
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        const gainNode = audioCtx.createGain();
+        gainNode.gain.setValueAtTime(volume * 0.8, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + Math.min(duracao, buffer.duration));
+        source.connect(gainNode);
+        gainNode.connect(masterGainNode);
+        source.start();
+        // Se o áudio for mais longo que a duração desejada, interrompe
+        if (duracao < buffer.duration) {
+            setTimeout(() => {
+                try { source.stop(); } catch(e) {}
+            }, duracao * 1000);
+        }
+    }
+
+    function tocarNota(notaLetra, duracao = 0.6, volume = 1.0) {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            masterGainNode = audioCtx.createGain();
+            masterGainNode.gain.value = 1.0;
+            masterGainNode.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+
+        const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
+        if (!conjuntoAtual) return;
+        const nota = conjuntoAtual.notas.find(n => n.letra === notaLetra);
+        if (!nota) return;
+
+        const oitava = nota.oitava || 4;
+        const nomeArquivo = notaParaNomeArquivo(nota.letra, oitava);
+        const url = `mp3/${nomeArquivo}`; // ajuste o caminho se necessário
+
+        if (audioCache.has(url)) {
+            tocarBuffer(audioCache.get(url), volume, duracao);
+            return;
+        }
+
+        fetch(url)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status} - ${url}`);
+                return res.arrayBuffer();
+            })
+            .then(data => audioCtx.decodeAudioData(data))
+            .then(buffer => {
+                audioCache.set(url, buffer);
+                tocarBuffer(buffer, volume, duracao);
+            })
+            .catch(err => console.error('Erro ao carregar MP3:', err));
+    }
+
+    // ============================================================
     //  DOM ELEMENTOS
     // ============================================================
     const notationEl = document.getElementById('notation');
@@ -1107,14 +1195,11 @@
     const repeticoesSelect = document.getElementById('repeticoesSelect');
     const tonalidadeSelect = document.getElementById('tonalidadeSelect');
     const ordemSelect = document.getElementById('ordemSelect');
+    // O select de som foi ocultado, mas ainda está no DOM
     const somSelect = document.getElementById('somSelect');
 
     // ============================================================
-    //  NENHUM EVENTO ESPECIAL NO SELECT SOM – cópia exata do select Escalas
-    // ============================================================
-
-    // ============================================================
-    //  FUNÇÃO PARA ENVIAR RESULTADO
+    //  FUNÇÃO PARA ENVIAR RESULTADO (mesma de antes)
     // ============================================================
     function enviarResultado() {
         if (acertos >= 10) {
@@ -1151,10 +1236,8 @@
     });
 
     // ============================================================
-    //  VARIÁVEIS DE ESTADO
+    //  VARIÁVEIS DE ESTADO (mesmas)
     // ============================================================
-    let audioCtx = null;
-    let masterGainNode = null;
     let estaTocando = false;
     let aguardandoResposta = false;
     let notaEsperada = null;
@@ -1172,7 +1255,7 @@
     let timeoutsPergunta = [];
 
     // ============================================================
-    //  REORDENAÇÃO MISTA
+    //  REORDENAÇÃO MISTA (mesma)
     // ============================================================
     function reordenarIntercalado(conjuntos) {
         const ordemTonalidades = ['do', 'fa', 'sol', 'sib', 're', 'mib', 'la', 'lab', 'mi', 'reb'];
@@ -1197,7 +1280,7 @@
     }
 
     // ============================================================
-    //  CARREGAR TONALIDADES SELECIONADAS
+    //  CARREGAR TONALIDADES SELECIONADAS (mesma)
     // ============================================================
     function carregarTonalidadesSelecionadas() {
         const selectedOptions = tonalidadeSelect.selectedOptions;
@@ -1244,61 +1327,7 @@
     }
 
     // ============================================================
-    //  ÁUDIO – PIANO (com múltiplas formas de onda via select)
-    // ============================================================
-    function tocarNota(notaLetra, duracao = 0.6, volume = 1.0) {
-        try {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                masterGainNode = audioCtx.createGain();
-                masterGainNode.gain.value = 1.0;
-                masterGainNode.connect(audioCtx.destination);
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            const conjuntoAtual = CONJUNTOS_FILTRADOS[conjuntoIndex];
-            if (!conjuntoAtual) return;
-            const nota = conjuntoAtual.notas.find(n => n.letra === notaLetra);
-            if (!nota) return;
-
-            // Obter formas de onda selecionadas
-            const selectedOptions = somSelect.selectedOptions;
-            const formas = Array.from(selectedOptions).map(opt => opt.value);
-            if (formas.length === 0) {
-                formas.push('sine');
-            }
-            const numFormas = formas.length;
-            const volumePorForma = volume / numFormas;
-
-            const freq = nota.freq;
-            const time = audioCtx.currentTime;
-
-            formas.forEach(tipo => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = tipo;
-                osc.frequency.setValueAtTime(freq, time);
-                gain.gain.setValueAtTime(0, time);
-                gain.gain.linearRampToValueAtTime(volumePorForma * 0.8, time + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, time + duracao * 0.6);
-
-                osc.connect(gain);
-                gain.connect(masterGainNode);
-
-                osc.start(time);
-                osc.stop(time + duracao);
-            });
-
-            return true;
-        } catch (e) {
-            console.error('Erro ao tocar nota:', e);
-            return false;
-        }
-    }
-
-    // ============================================================
-    //  PARTITURA
+    //  PARTITURA (mesma)
     // ============================================================
     function desenharPartitura(destaqueIndex = -1) {
         notationEl.innerHTML = '';
@@ -1407,7 +1436,7 @@
     }
 
     // ============================================================
-    //  INTERFACE E LÓGICA (restante igual)
+    //  INTERFACE E LÓGICA (idêntica, exceto que usa a nova tocarNota)
     // ============================================================
     function atualizarInterface() {
         if (!CONJUNTOS_FILTRADOS.length) {
@@ -1745,7 +1774,7 @@
     });
 
     // ============================================================
-    //  CONTROLES E INICIALIZAÇÃO
+    //  CONTROLES E INICIALIZAÇÃO (idênticos)
     // ============================================================
     speedSlider.addEventListener('input', function() {
         const val = parseFloat(this.value) / 100;
