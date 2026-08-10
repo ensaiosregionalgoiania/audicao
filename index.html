@@ -47,6 +47,25 @@
             transform: scale(1.05);
             background: #d63a5e;
         }
+        .btn-limpar {
+            position: absolute;
+            top: 10px;
+            right: 110px;
+            background: #FF9800;
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 0.7em;
+            padding: 6px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+        }
+        .btn-limpar:hover {
+            transform: scale(1.05);
+            background: #e68900;
+        }
         h1 {
             text-align: center;
             color: #333;
@@ -299,6 +318,7 @@
             .container { padding: 10px 8px; }
             h1 { font-size: 1.2em; margin-right: 0; }
             .btn-fechar { top: 5px; right: 8px; font-size: 0.7em; padding: 4px 10px; }
+            .btn-limpar { top: 5px; right: 80px; font-size: 0.6em; padding: 4px 8px; }
             .controls-row { flex-direction: column; align-items: stretch; gap: 8px; }
             .control-group { justify-content: space-between; }
             .control-group.vertical { align-items: stretch; }
@@ -333,6 +353,7 @@
 
 <div class="container">
     <button class="btn-fechar" id="btnFechar">✕ Fechar</button>
+    <button class="btn-limpar" id="btnLimpar">🗑️ Limpar progresso</button>
     <h1>🎵 <span>Audição</span></h1>
 
     <div class="controls-row">
@@ -367,7 +388,7 @@
             </select>
         </div>
 
-        <!-- Som – agora oculto porque usamos MP3 fixo (piano) -->
+        <!-- Som – oculto -->
         <div class="control-group vertical" style="display:none;">
             <label for="somSelect">🎵 Som:</label>
             <select id="somSelect" multiple size="1">
@@ -1093,11 +1114,8 @@
     // ============================================================
     //  NOVO: MAPEAMENTO PARA ARQUIVOS MP3
     // ============================================================
-    // Converte letra + oitava para o nome do arquivo no formato pianoff{nota}{oitava}.mp3
-    // Sustenidos são mapeados para bemóis equivalentes
     function notaParaNomeArquivo(letra, oitava) {
         let nome = letra.toLowerCase();
-        // Mapeamento de sustenidos para bemóis
         const sustenidos = {
             'c#': 'db',
             'd#': 'eb',
@@ -1108,18 +1126,17 @@
         if (nome.endsWith('#')) {
             nome = sustenidos[nome] || nome;
         }
-        // Casos especiais: E# -> F, B# -> C
         if (nome === 'e#') nome = 'f';
         if (nome === 'b#') nome = 'c';
         return `pianoff${nome}${oitava}.mp3`;
     }
 
     // ============================================================
-    //  ÁUDIO COM MP3 (substituindo osciladores)
+    //  ÁUDIO COM MP3
     // ============================================================
     let audioCtx = null;
     let masterGainNode = null;
-    const audioCache = new Map(); // cache de buffers
+    const audioCache = new Map();
 
     function tocarBuffer(buffer, volume, duracao) {
         const source = audioCtx.createBufferSource();
@@ -1130,7 +1147,6 @@
         source.connect(gainNode);
         gainNode.connect(masterGainNode);
         source.start();
-        // Se o áudio for mais longo que a duração desejada, interrompe
         if (duracao < buffer.duration) {
             setTimeout(() => {
                 try { source.stop(); } catch(e) {}
@@ -1156,7 +1172,7 @@
 
         const oitava = nota.oitava || 4;
         const nomeArquivo = notaParaNomeArquivo(nota.letra, oitava-1);
-        const url = `mp3/${nomeArquivo}`; // ajuste o caminho se necessário
+        const url = `mp3/${nomeArquivo}`;
 
         if (audioCache.has(url)) {
             tocarBuffer(audioCache.get(url), volume, duracao);
@@ -1187,6 +1203,7 @@
     const btnPlay = document.getElementById('btnPlay');
     const btnRepeat = document.getElementById('btnRepeat');
     const btnFechar = document.getElementById('btnFechar');
+    const btnLimpar = document.getElementById('btnLimpar');
     const legendaEl = document.getElementById('legenda');
     const overlay = document.getElementById('orientationOverlay');
     const speedSlider = document.getElementById('speedSlider');
@@ -1194,11 +1211,10 @@
     const repeticoesSelect = document.getElementById('repeticoesSelect');
     const tonalidadeSelect = document.getElementById('tonalidadeSelect');
     const ordemSelect = document.getElementById('ordemSelect');
-    // O select de som foi ocultado, mas ainda está no DOM
     const somSelect = document.getElementById('somSelect');
 
     // ============================================================
-    //  FUNÇÃO PARA ENVIAR RESULTADO (mesma de antes)
+    //  FUNÇÃO PARA ENVIAR RESULTADO
     // ============================================================
     function enviarResultado() {
         if (acertos >= 10) {
@@ -1222,7 +1238,7 @@
     }
 
     // ============================================================
-    //  BOTÃO FECHAR
+    //  BOTÃO FECHAR E LIMPAR
     // ============================================================
     btnFechar.addEventListener('click', function() {
         enviarResultado();
@@ -1234,8 +1250,15 @@
         }
     });
 
+    btnLimpar.addEventListener('click', function() {
+        if (confirm('Tem certeza que deseja apagar todo o progresso salvo e recomeçar?')) {
+            localStorage.removeItem('estadoEscalas');
+            location.reload();
+        }
+    });
+
     // ============================================================
-    //  VARIÁVEIS DE ESTADO (mesmas)
+    //  VARIÁVEIS DE ESTADO
     // ============================================================
     let estaTocando = false;
     let aguardandoResposta = false;
@@ -1254,7 +1277,67 @@
     let timeoutsPergunta = [];
 
     // ============================================================
-    //  REORDENAÇÃO MISTA (mesma)
+    //  PERSISTÊNCIA (LOCAL STORAGE)
+    // ============================================================
+    function salvarEstado() {
+        const estado = {
+            conjuntoIndex: conjuntoIndex,
+            acertos: acertos,
+            erros: erros,
+            tonalidadesSelecionadas: Array.from(tonalidadeSelect.selectedOptions)
+                .map(o => o.value).filter(v => v !== 'todas'),
+            ordem: ordemSelect.value,
+            velocidade: speedSlider.value,
+            repeticoes: repeticoesSelect.value,
+            jogoTerminado: jogoTerminado
+        };
+        localStorage.setItem('estadoEscalas', JSON.stringify(estado));
+    }
+
+    function carregarEstado() {
+        const dados = localStorage.getItem('estadoEscalas');
+        if (!dados) return false;
+        try {
+            const estado = JSON.parse(dados);
+            // Restaurar controles
+            if (estado.ordem) ordemSelect.value = estado.ordem;
+            if (estado.velocidade) speedSlider.value = estado.velocidade;
+            if (estado.repeticoes) repeticoesSelect.value = estado.repeticoes;
+            // Restaurar tonalidades
+            if (estado.tonalidadesSelecionadas && estado.tonalidadesSelecionadas.length) {
+                Array.from(tonalidadeSelect.options).forEach(opt => opt.selected = false);
+                estado.tonalidadesSelecionadas.forEach(ton => {
+                    const opt = tonalidadeSelect.querySelector(`option[value="${ton}"]`);
+                    if (opt) opt.selected = true;
+                });
+                // Se nenhuma selecionada, marca 'todas'
+                if (tonalidadeSelect.selectedOptions.length === 0) {
+                    const optTodas = tonalidadeSelect.querySelector('option[value="todas"]');
+                    if (optTodas) optTodas.selected = true;
+                }
+            }
+            // Recarregar lista filtrada (isso redefine conjuntoIndex, acertos, erros)
+            carregarTonalidadesSelecionadas();
+            // Sobrescrever com valores salvos
+            conjuntoIndex = estado.conjuntoIndex || 0;
+            acertos = estado.acertos || 0;
+            erros = estado.erros || 0;
+            jogoTerminado = estado.jogoTerminado || false;
+            // Atualizar interface
+            atualizarInterface();
+            desenharPartitura(-1);
+            if (jogoTerminado) {
+                feedbackMsg.textContent = `🏁 Fim! Acertos: ${acertos}, Erros: ${erros}`;
+                feedbackMsg.className = 'feedback fim';
+            }
+            return true;
+        } catch(e) {
+            return false;
+        }
+    }
+
+    // ============================================================
+    //  REORDENAÇÃO MISTA
     // ============================================================
     function reordenarIntercalado(conjuntos) {
         const ordemTonalidades = ['do', 'fa', 'sol', 'sib', 're', 'mib', 'la', 'lab', 'mi', 'reb'];
@@ -1279,7 +1362,7 @@
     }
 
     // ============================================================
-    //  CARREGAR TONALIDADES SELECIONADAS (mesma)
+    //  CARREGAR TONALIDADES SELECIONADAS
     // ============================================================
     function carregarTonalidadesSelecionadas() {
         const selectedOptions = tonalidadeSelect.selectedOptions;
@@ -1323,10 +1406,11 @@
         btnPlay.disabled = false;
         btnRepeat.disabled = true;
         document.querySelectorAll('.nota-btn').forEach(b => b.classList.remove('acertou', 'errou', 'destaque'));
+        salvarEstado();
     }
 
     // ============================================================
-    //  PARTITURA (mesma)
+    //  PARTITURA
     // ============================================================
     function desenharPartitura(destaqueIndex = -1) {
         notationEl.innerHTML = '';
@@ -1435,7 +1519,7 @@
     }
 
     // ============================================================
-    //  INTERFACE E LÓGICA (idêntica, exceto que usa a nova tocarNota)
+    //  INTERFACE E LÓGICA
     // ============================================================
     function atualizarInterface() {
         if (!CONJUNTOS_FILTRADOS.length) {
@@ -1473,6 +1557,7 @@
             desabilitarBotoes(false);
             btnRepeat.disabled = false;
         }
+        salvarEstado(); // persistência automática
     }
 
     function desabilitarBotoes(desabilitar) {
@@ -1601,6 +1686,7 @@
             timeoutsPergunta.push(id3);
         }, 300 + (duracaoNota * 1000) + 200);
         timeoutsPergunta.push(id2);
+        salvarEstado();
     }
 
     function repetirNota() {
@@ -1695,6 +1781,7 @@
             timeoutsPergunta.push(id3);
         }, 300 + (duracaoNota * 1000) + 200);
         timeoutsPergunta.push(id2);
+        salvarEstado();
     }
 
     function verificarResposta(letraClicada) {
@@ -1748,6 +1835,7 @@
             desabilitarBotoes(true);
             feedbackMsg.textContent = `🏁 Fim! Acertos: ${acertos}, Erros: ${erros}`;
             feedbackMsg.className = 'feedback fim';
+            salvarEstado();
             return;
         }
         perguntaConcluida = false;
@@ -1763,6 +1851,7 @@
         feedbackMsg.className = 'feedback';
         desenharPartitura(-1);
         atualizarInterface();
+        salvarEstado();
     }
 
     // ============================================================
@@ -1773,11 +1862,20 @@
     });
 
     // ============================================================
-    //  CONTROLES E INICIALIZAÇÃO (idênticos)
+    //  CONTROLES E INICIALIZAÇÃO
     // ============================================================
     speedSlider.addEventListener('input', function() {
         const val = parseFloat(this.value) / 100;
         speedValue.textContent = val.toFixed(1) + 'x';
+        salvarEstado();
+    });
+
+    repeticoesSelect.addEventListener('change', salvarEstado);
+    ordemSelect.addEventListener('change', function() {
+        if (CONJUNTOS_TODOS.length) {
+            carregarTonalidadesSelecionadas();
+        }
+        salvarEstado();
     });
 
     btnPlay.addEventListener('click', () => {
@@ -1796,12 +1894,6 @@
     });
 
     btnRepeat.addEventListener('click', repetirNota);
-
-    ordemSelect.addEventListener('change', function() {
-        if (CONJUNTOS_TODOS.length) {
-            carregarTonalidadesSelecionadas();
-        }
-    });
 
     function popularSelect() {
         const ordem = ['do', 'fa', 'sol', 'sib', 're', 'mib', 'la', 'lab', 'mi', 'reb'];
@@ -1843,6 +1935,7 @@
             }
 
             carregarTonalidadesSelecionadas();
+            salvarEstado();
         });
 
         optTodas.selected = false;
@@ -1856,6 +1949,13 @@
         CONJUNTOS_TODOS = processarLista();
         popularSelect();
         carregarTonalidadesSelecionadas();
+        // Tentar restaurar estado salvo (sobrescreve contadores e posição)
+        const carregado = carregarEstado();
+        if (!carregado) {
+            // Se não havia estado, salva o estado inicial
+            salvarEstado();
+        }
+        // Atualizar display da velocidade
         speedValue.textContent = (parseFloat(speedSlider.value) / 100).toFixed(1) + 'x';
     }
 
