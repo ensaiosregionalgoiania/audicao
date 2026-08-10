@@ -1316,8 +1316,8 @@
                     if (optTodas) optTodas.selected = true;
                 }
             }
-            // Recarregar lista filtrada (isso redefine conjuntoIndex, acertos, erros)
-            carregarTonalidadesSelecionadas();
+            // Recarregar a lista filtrada SEM resetar os contadores
+            carregarTonalidadesSelecionadas(false);
             // Sobrescrever com valores salvos
             conjuntoIndex = estado.conjuntoIndex || 0;
             acertos = estado.acertos || 0;
@@ -1362,9 +1362,9 @@
     }
 
     // ============================================================
-    //  CARREGAR TONALIDADES SELECIONADAS
+    //  CARREGAR TONALIDADES SELECIONADAS (com parâmetro resetar)
     // ============================================================
-    function carregarTonalidadesSelecionadas() {
+    function carregarTonalidadesSelecionadas(resetar = true) {
         const selectedOptions = tonalidadeSelect.selectedOptions;
         const selecionadas = Array.from(selectedOptions)
             .map(opt => opt.value)
@@ -1386,18 +1386,22 @@
 
         CONJUNTOS_FILTRADOS = filtrados;
         TOTAL_CONJUNTOS = CONJUNTOS_FILTRADOS.length;
-        conjuntoIndex = 0;
-        acertos = 0;
-        erros = 0;
-        jogoTerminado = false;
-        perguntaConcluida = false;
-        aguardandoResposta = false;
-        estaTocando = false;
-        notaEsperada = null;
-        notaEsperadaObj = null;
-        timeoutIds.forEach(id => clearTimeout(id));
-        timeoutIds = [];
-        notaDestaque = -1;
+        
+        // Se resetar for true, zera tudo; senão mantém os valores atuais
+        if (resetar) {
+            conjuntoIndex = 0;
+            acertos = 0;
+            erros = 0;
+            jogoTerminado = false;
+            perguntaConcluida = false;
+            aguardandoResposta = false;
+            estaTocando = false;
+            notaEsperada = null;
+            notaEsperadaObj = null;
+            timeoutIds.forEach(id => clearTimeout(id));
+            timeoutIds = [];
+            notaDestaque = -1;
+        }
 
         desenharPartitura(-1);
         atualizarInterface();
@@ -1873,7 +1877,7 @@
     repeticoesSelect.addEventListener('change', salvarEstado);
     ordemSelect.addEventListener('change', function() {
         if (CONJUNTOS_TODOS.length) {
-            carregarTonalidadesSelecionadas();
+            carregarTonalidadesSelecionadas(); // reset ao mudar ordem
         }
         salvarEstado();
     });
@@ -1934,7 +1938,7 @@
                 optTodas.selected = false;
             }
 
-            carregarTonalidadesSelecionadas();
+            carregarTonalidadesSelecionadas(); // reset ao mudar tonalidades
             salvarEstado();
         });
 
@@ -1948,12 +1952,11 @@
         }
         CONJUNTOS_TODOS = processarLista();
         popularSelect();
-        carregarTonalidadesSelecionadas();
-        // Tentar restaurar estado salvo (sobrescreve contadores e posição)
+        // Tenta carregar estado salvo
         const carregado = carregarEstado();
         if (!carregado) {
-            // Se não havia estado, salva o estado inicial
-            salvarEstado();
+            // Se não há estado, carrega com reset (padrão)
+            carregarTonalidadesSelecionadas();
         }
         // Atualizar display da velocidade
         speedValue.textContent = (parseFloat(speedSlider.value) / 100).toFixed(1) + 'x';
